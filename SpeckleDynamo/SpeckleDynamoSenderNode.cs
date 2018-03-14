@@ -5,35 +5,35 @@ using System.Collections.Generic;
 
 namespace SpeckleDynamo
 {
-    [NodeName("Data Sender")]
-    [NodeDescription("Sends data tp Speckle.")]
-    [NodeCategory("Speckle.IO")]
-    //Outputs
-    [OutPortNames("Log","ID")]
-    [OutPortDescriptions("Log Data","Stream ID")]
-    [OutPortTypes("string", "string")]
-
-    public class SpeckleDynamoSenderNode : VariableInputNode
+  [NodeName("DataSender")]
+  [NodeDescription("Sends data tp Speckle.")]
+  [NodeCategory("Speckle.IO")]
+  //Outputs
+  [OutPortNames("Log", "ID")]
+  [OutPortDescriptions("Log Data", "Stream ID")]
+  [OutPortTypes("string", "string")]
+  [IsDesignScriptCompatible]
+  public class SpeckleDynamoSenderNode : VariableInputNode
+  {
+    public SpeckleDynamoSenderNode()
     {
-        public SpeckleDynamoSenderNode()
-        {
-            RegisterAllPorts();
-        }
-
-        protected override string GetInputName(int index)
-        {
-            return index.ToString();
-        }
-
-        protected override string GetInputTooltip(int index)
-        {
-            return "Layer " + index.ToString();
-        }
-
-        public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
-        {
-            return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
-        }
-
+      RegisterAllPorts();
     }
+
+    protected override string GetInputName(int index)
+    {
+      return index.ToString();
+    }
+
+    protected override string GetInputTooltip(int index)
+    {
+      return "Layer " + index.ToString();
+    }
+
+    public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
+    {
+      return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
+    }
+
+  }
 }
