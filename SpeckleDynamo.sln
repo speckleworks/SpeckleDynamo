@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2020
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpeckleDynamo", "SpeckleDynamo\SpeckleDynamo.csproj", "{91E0BFFD-2945-471E-9007-3778AA174938}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpeckleDynamoFunctions", "SpeckleDynamoFUnctions\SpeckleDynamoFunctions.csproj", "{7D9A6B97-5773-44B1-8C04-367BFF0F8599}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{91E0BFFD-2945-471E-9007-3778AA174938}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{91E0BFFD-2945-471E-9007-3778AA174938}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{91E0BFFD-2945-471E-9007-3778AA174938}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{91E0BFFD-2945-471E-9007-3778AA174938}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D9A6B97-5773-44B1-8C04-367BFF0F8599}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D9A6B97-5773-44B1-8C04-367BFF0F8599}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D9A6B97-5773-44B1-8C04-367BFF0F8599}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D9A6B97-5773-44B1-8C04-367BFF0F8599}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EE26807D-0F79-48CD-8402-FA6FEB5FD505}
+	EndGlobalSection
+EndGlobal
