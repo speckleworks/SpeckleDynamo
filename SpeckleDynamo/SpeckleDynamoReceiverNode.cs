@@ -7,11 +7,12 @@ namespace SpeckleDynamo
   [NodeName("DataReceiver")]
   [NodeDescription("Receives data from Speckle.")]
   [NodeCategory("Speckle.IO")]
+
   //Inputs
   [InPortNames("ID")]
   [InPortDescriptions("The stream's short id.")]
   [InPortTypes("string")]
-  //Outputs
+
   [IsDesignScriptCompatible]
   public class SpeckleDynamoReceiverNode : NodeModel
   {

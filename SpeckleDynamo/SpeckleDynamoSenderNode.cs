@@ -5,35 +5,52 @@ using System.Collections.Generic;
 
 namespace SpeckleDynamo
 {
-  [NodeName("DataSender")]
-  [NodeDescription("Sends data tp Speckle.")]
-  [NodeCategory("Speckle.IO")]
-  //Outputs
-  [OutPortNames("Log", "ID")]
-  [OutPortDescriptions("Log Data", "Stream ID")]
-  [OutPortTypes("string", "string")]
-  [IsDesignScriptCompatible]
-  public class SpeckleDynamoSenderNode : VariableInputNode
-  {
-    public SpeckleDynamoSenderNode()
-    {
-      RegisterAllPorts();
-    }
+    [NodeName("DataSender")]
+    [NodeDescription("Sends data to Speckle.")]
+    [NodeCategory("Speckle.IO")]
 
-    protected override string GetInputName(int index)
-    {
-      return index.ToString();
-    }
+    //Inputs
+    [InPortNames("A")]
+    [InPortDescriptions("Things to be sent around.")]
+    [InPortTypes("object")]
 
-    protected override string GetInputTooltip(int index)
-    {
-      return "Layer " + index.ToString();
-    }
+    //Outputs
+    [OutPortNames("Log", "ID")]
+    [OutPortDescriptions("Log Data", "Stream ID")]
+    [OutPortTypes("string", "string")]
 
-    public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
+    [IsDesignScriptCompatible]
+    public class SpeckleDynamoSenderNode : VariableInputNode
     {
-      return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
-    }
+        public SpeckleDynamoSenderNode()
+        {
+            RegisterAllPorts();
+        }
 
-  }
+        protected override string GetInputName(int index)
+        {
+            return index.ToString();
+        }
+
+        protected override string GetInputTooltip(int index)
+        {
+            return "Layer " + index.ToString();
+        }
+
+        protected override void AddInput()
+        {
+            base.AddInput();
+        }
+
+        protected override void RemoveInput()
+        {
+            base.RemoveInput();
+        }
+
+        public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
+        {
+            return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
+        }
+
+    }
 }
