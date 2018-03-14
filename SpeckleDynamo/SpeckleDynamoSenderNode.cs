@@ -30,5 +30,10 @@ namespace SpeckleDynamo
             return "Layer " + index.ToString();
         }
 
+        public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
+        {
+            return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
+        }
+
     }
 }

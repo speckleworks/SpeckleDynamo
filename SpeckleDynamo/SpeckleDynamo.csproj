@@ -54,14 +54,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="SpeckleDynamoReceiverNode.cs" />
+    <Compile Include="SpeckleDynamoReceiverUI.cs" />
     <Compile Include="SpeckleDynamoSenderNode.cs" />
-    <Page Include="MainWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Compile Include="MainWindow.xaml.cs">
-      <DependentUpon>MainWindow.xaml</DependentUpon>
-      <SubType>Code</SubType>
+    <Compile Include="SpeckleDynamoSenderUI.cs" />
+    <Compile Include="SpeckleDynamoUserControl.xaml.cs">
+      <DependentUpon>SpeckleDynamoUserControl.xaml</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -107,6 +104,12 @@
       <Project>{7d9a6b97-5773-44b1-8c04-367bff0f8599}</Project>
       <Name>SpeckleDynamoFunctions</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="SpeckleDynamoUserControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

@@ -10,6 +10,11 @@ namespace SpeckleDynamo.Functions
         {
             return a * b;
         }
+
+        public static string HelloWorld()
+        {
+            return "Hello World";
+        }
     }
 
 }
