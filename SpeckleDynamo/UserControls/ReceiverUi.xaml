@@ -1,0 +1,80 @@
+﻿<UserControl
+  x:Class="SpeckleDynamo.UserControls.ReceiverUi"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  mc:Ignorable="d">
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="pack://application:,,,/SpeckleDynamo;component/Resources.xaml" />
+      </ResourceDictionary.MergedDictionaries>
+      <BooleanToVisibilityConverter x:Key="BoolToVis" />
+      <Style BasedOn="{StaticResource MaterialDesignRaisedButton}" TargetType="{x:Type Button}">
+        <Setter Property="Margin" Value="0,8,0,8" />
+      </Style>
+      <Style BasedOn="{StaticResource MaterialDesignTextBox}" TargetType="{x:Type TextBox}">
+        <Setter Property="Margin" Value="0,8,0,8" />
+      </Style>
+    </ResourceDictionary>
+  </UserControl.Resources>
+  <Grid>
+    <Grid.ColumnDefinitions />
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+    <TextBox
+      Name="Stream"
+      Grid.Row="0"
+      Margin="5"
+      materialDesign:HintAssist.Hint="Stream ID"
+      Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+      Text="{Binding Stream}" />
+    <Button
+      Name="PausePlayButton"
+      Grid.Row="1"
+      Width="30"
+      Height="30"
+      Margin="5"
+      Style="{StaticResource MaterialDesignFloatingActionButton}"
+      ToolTip="Pause/Resume receiving">
+      <Grid>
+        <materialDesign:PackIcon
+          Width="20"
+          Height="24"
+          Kind="Pause"
+          Visibility="{Binding Receiving, Converter={StaticResource BoolToVis}, FallbackValue=Visible}" />
+        <materialDesign:PackIcon
+          Width="20"
+          Height="24"
+          Kind="Play"
+          Visibility="{Binding Paused, Converter={StaticResource BoolToVis}, FallbackValue=Hidden}" />
+      </Grid>
+    </Button>
+    <Label
+      Grid.Row="2"
+      HorizontalAlignment="Center"
+      HorizontalContentAlignment="Center"
+      Content="{Binding Message}"
+      FontSize="10"
+      Foreground="OrangeRed" />
+    <StackPanel
+      Grid.Row="3"
+      Margin="2"
+      Orientation="Horizontal">
+      <Label
+        Content="{Binding Email}"
+        FontSize="9"
+        Foreground="Gray" />
+      <Label
+        Content="{Binding Server}"
+        FontSize="9"
+        Foreground="Gray" />
+    </StackPanel>
+  </Grid>
+</UserControl>
