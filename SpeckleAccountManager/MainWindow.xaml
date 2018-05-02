@@ -6,49 +6,5 @@
         xmlns:local="clr-namespace:SpecklePopup"
         mc:Ignorable="d"
         Title="MainWindow" Height="380" Width="440.532" AllowsTransparency="True" WindowStyle="None">
-    <Window.Effect>
-        <DropShadowEffect BlurRadius="22"/>
-    </Window.Effect>
-    <Grid>
-        <Rectangle MouseDown="Rectangle_MouseDown"  Fill="#F9FFFFFF" HorizontalAlignment="Left" Height="380" Stroke="Black" VerticalAlignment="Top" Width="441" Margin="0,0,-0.2,0" StrokeThickness="0"/>
-        <TabControl x:Name="tabControl" HorizontalAlignment="Left" Height="350" Margin="2,30,0,0" VerticalAlignment="Top" Width="439" BorderBrush="White" BorderThickness="0">
-            <TabItem Header="Existing Account" Foreground="#FF004CFF" FontSize="16" ToolTip="Select an existing speckle server connection to use.">
-                <Grid Background="White">
-                    <Button x:Name="button_Copy" Content="Use Selected" HorizontalAlignment="Left" Margin="314,267,0,0" VerticalAlignment="Top" Width="111" Height="42" Background="#FF004CFF" BorderBrush="White" Foreground="White" IsDefault="True" Click="UseSelected"/>
-                    <TextBlock x:Name="textBlock_Copy" HorizontalAlignment="Left" Margin="10,10,0,0" TextWrapping="Wrap" Text="Select an account from the list below. " VerticalAlignment="Top" Height="24" Width="415" FontSize="12" Foreground="#FF3F3F3F"/>
-                    <ListView MouseDoubleClick="ListView_MouseDoubleClick"  x:Name="existingAccounts" HorizontalAlignment="Left" Height="223" Margin="10,39,0,0" VerticalAlignment="Top" Width="415">
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn/>
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
-                </Grid>
-            </TabItem>
-            <TabItem Header="New Account" FontSize="16" Foreground="#FF004CFF" IsSelected="True" ToolTip="Register a new account with a speckle server.">
-                <Grid Background="White">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition Width="0*"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock x:Name="textBlock" HorizontalAlignment="Left" Margin="16,11,0,0" TextWrapping="Wrap" Text="Please provide your details below and click register." VerticalAlignment="Top" Height="24" Width="409" FontSize="12" Foreground="#FF3F3F3F"/>
-                    <TextBox x:Name="serverUrlBox" HorizontalAlignment="Left" Height="23" Margin="117,43,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="308" ToolTip="Server Url. Starts with http or https!" AllowDrop="False" LostFocus="validateInputs"/>
-                    <Label x:Name="server_label" Content="Server URL" HorizontalAlignment="Left" Margin="10,39,0,0" VerticalAlignment="Top" Height="31" Width="86"/>
-                    <TextBox x:Name="emailBox" HorizontalAlignment="Left" Height="23" Margin="117,79,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="308" AutomationProperties.HelpText="Your email" ToolTip="Your email address." LostFocus="validateInputs"/>
-                    <Label x:Name="email_label" Content="Email" HorizontalAlignment="Left" Margin="10,75,0,0" VerticalAlignment="Top" Height="31" Width="86"/>
-                    <Label x:Name="password_label" Content="Password" HorizontalAlignment="Left" Margin="10,111,0,0" VerticalAlignment="Top" Height="31" Width="86"/>
-                    <PasswordBox x:Name="passwordBox" HorizontalAlignment="Left" Margin="117,115,0,0" VerticalAlignment="Top" Width="308" ToolTip="Your password." LostFocus="validateInputs"/>
-                    <Label x:Name="password_confirm_label" Content="Confirm" HorizontalAlignment="Left" Margin="10,147,0,0" VerticalAlignment="Top" Height="31" Width="86"/>
-                    <PasswordBox x:Name="passwordBox_confirm" HorizontalAlignment="Left" Margin="117,151,0,0" VerticalAlignment="Top" Width="308" ToolTip="Confirm your password." LostFocus="validateInputs"/>
-                    <Button x:Name="registerBtn" Content="Register!" HorizontalAlignment="Left" Margin="314,267,0,0" VerticalAlignment="Top" Width="111" Height="42" Background="#FF004CFF" BorderBrush="White" Foreground="White" IsDefault="True" Click="registerBtn_Click"/>
-                    <TextBlock x:Name="errors" HorizontalAlignment="Left" Margin="16,249,0,0" TextWrapping="Wrap" Text="No errors." VerticalAlignment="Top" Height="20" Width="409" FontSize="12" Foreground="#FF3F3F3F"/>
-                    <TextBox x:Name="NameBox" HorizontalAlignment="Left" Height="23" Margin="117,186,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="308" ToolTip="Your name (optional)." AllowDrop="False" LostFocus="validateInputs"/>
-                    <Label x:Name="password_confirm_label_Copy" Content="Name" HorizontalAlignment="Left" Margin="10,180,0,0" VerticalAlignment="Top" Height="31" Width="86" Foreground="#FF838383"/>
-                    <TextBox x:Name="SurnameBox" HorizontalAlignment="Left" Height="23" Margin="117,217,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="308" ToolTip="Your surname (optional)." AllowDrop="False" LostFocus="validateInputs"/>
-                    <Label x:Name="password_confirm_label_Copy1" Content="Surname" HorizontalAlignment="Left" Margin="10,211,0,0" VerticalAlignment="Top" Height="31" Width="86" Foreground="#FF838383"/>
-                </Grid>
-            </TabItem>
-        </TabControl>
-        <Button x:Name="closeButton" Content="CLOSE" HorizontalAlignment="Left" Margin="374,30,0,0" VerticalAlignment="Top" Width="48" Height="42" Background="White" BorderBrush="White" Foreground="#FF0028FF" Click="closeButton_Click" FontSize="14" RenderTransformOrigin="0.662,0.54" IsCancel="True"/>
-    </Grid>
+  <local:AccountsUserControl></local:AccountsUserControl>
 </Window>
