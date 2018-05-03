@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpecklePopup", "SpeckleAcco
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpeckleDynamoExtension", "SpeckleDynamoExtension\SpeckleDynamoExtension.csproj", "{146EBF48-E7A0-4ABE-809D-D7F3059E4EE1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpecklePopupOld", "SpeckleAccountManagerOld\SpecklePopupOld.csproj", "{A4F933E6-62E0-4F75-8DC7-B2E9F0F6F73E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{146EBF48-E7A0-4ABE-809D-D7F3059E4EE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{146EBF48-E7A0-4ABE-809D-D7F3059E4EE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{146EBF48-E7A0-4ABE-809D-D7F3059E4EE1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4F933E6-62E0-4F75-8DC7-B2E9F0F6F73E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4F933E6-62E0-4F75-8DC7-B2E9F0F6F73E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4F933E6-62E0-4F75-8DC7-B2E9F0F6F73E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4F933E6-62E0-4F75-8DC7-B2E9F0F6F73E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

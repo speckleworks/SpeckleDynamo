@@ -5,239 +5,137 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using Newtonsoft.Json;
+using System.Collections.ObjectModel;
+using SpeckleCore;
 
 namespace SpecklePopup
 {
-
+  /// <summary>
+  /// Interaction logic for AccountsUserControl.xaml
+  /// </summary>
   public partial class AccountsUserControl : UserControl
   {
     List<string> existingServers = new List<string>();
     List<string> existingServers_fullDetails = new List<string>();
-    List<SpeckleAccount> accounts = new List<SpeckleAccount>();
+    internal ObservableCollection<SpeckleAccount> accounts = new ObservableCollection<SpeckleAccount>();
 
     bool validationCheckPass = false;
 
-    Uri server;
+    Uri ServerAddress;
     string email;
     string password;
 
     string serverName;
     public string restApi;
     public string apitoken;
-    public string selectedEmail;
-    public string selectedServer;
 
     public AccountsUserControl()
     {
       InitializeComponent();
 
-
-      string strPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
-      strPath = strPath + @"\SpeckleSettings";
-
+      //only show in popupmode
+      ButonUseSelected.Visibility = Visibility.Collapsed;
+      AccountListBox.ItemsSource = accounts;
+      LoadAccounts();
+    }
+    private void LoadAccounts()
+    {
+      accounts.Clear();
+      string strPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData) + @"\SpeckleSettings";
       if (Directory.Exists(strPath) && Directory.EnumerateFiles(strPath, "*.txt").Count() > 0)
         foreach (string file in Directory.EnumerateFiles(strPath, "*.txt"))
         {
           string content = File.ReadAllText(file);
           string[] pieces = content.TrimEnd('\r', '\n').Split(',');
 
-          accounts.Add(new SpeckleAccount() { email = pieces[0], apiToken = pieces[1], serverName = pieces[2], restApi = pieces[3], rootUrl = pieces[4] });
+          try
+          {
+            if (pieces.Length == 5)
+              accounts.Add(new SpeckleAccount() { email = pieces[0], apiToken = pieces[1], serverName = pieces[2], restApi = pieces[3], rootUrl = pieces[4], isDefault = false });
+            else if (pieces.Length == 6)
+              accounts.Add(new SpeckleAccount() { email = pieces[0], apiToken = pieces[1], serverName = pieces[2], restApi = pieces[3], rootUrl = pieces[4], isDefault = bool.Parse(pieces[5]) });
+          }
+          catch (Exception e)
+          {
+            MessageBox.Show(e.Message, "Something went wrong! (╯°□°）╯︵ ┻━┻");
+            return;
+          }
         }
-
-      var gridView = new GridView();
-      this.existingAccounts.View = gridView;
-      gridView.Columns.Add(new GridViewColumn
+      if (accounts.Any(x => x.isDefault))
       {
-        Header = "email",
-        DisplayMemberBinding = new Binding("email")
-      });
-      gridView.Columns.Add(new GridViewColumn
-      {
-        Header = "server",
-        DisplayMemberBinding = new Binding("serverName")
-      });
-
-      //gridView.Columns.Add(new GridViewColumn
-      //{
-      //    Header = "API",
-      //    DisplayMemberBinding = new Binding("restApi")
-      //});
-
-      if (accounts.Count == 0)
-      {
-        existingAccounts.Items.Add(new SpeckleAccount() { email = "No existing accounts found." });
-        Dispatcher.BeginInvoke((Action)(() => tabControl.SelectedIndex = 1));
-      }
-      else
-      {
-        Dispatcher.BeginInvoke((Action)(() => tabControl.SelectedIndex = 0));
+        int index = accounts.Select((v, i) => new { acc = v, index = i }).First(x => x.acc.isDefault).index;
+        AccountListBox.SelectedIndex = index;
       }
 
-      foreach (var account in accounts)
-      {
-        existingAccounts.Items.Add(account);
-      }
+
     }
-
-
-    private void Rectangle_MouseDown(object sender, MouseButtonEventArgs e)
-    {
-      this.DragMove();
-    }
-
-    private void closeButton_Click(object sender, RoutedEventArgs e)
-    {
-      //DialogResult = false;
-      this.Close();
-    }
-
-    private void validateInputs(object sender, RoutedEventArgs e)
+    private string ValidateRegister()
     {
       Debug.WriteLine("validating...");
       string validationErrors = "";
 
       Uri uriResult;
-      bool urlok = Uri.TryCreate(serverUrlBox.Text, UriKind.Absolute, out uriResult) &&
+      bool IsUrl = Uri.TryCreate(RegisterServerUrl.Text, UriKind.Absolute, out uriResult) &&
           (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
 
-      if (!urlok)
-        validationErrors += "Invalid server url. ";
+      if (!IsUrl)
+        validationErrors += "Invalid server url. \n";
+
+      ServerAddress = uriResult;
 
       MailAddress addr = null;
-
       try
       {
-        addr = new System.Net.Mail.MailAddress(this.emailBox.Text);
+        addr = new System.Net.Mail.MailAddress(this.RegisterEmail.Text);
       }
       catch
       {
-        validationErrors += "Invalid email. ";
+        validationErrors += "Invalid email address. \n";
       }
 
-      string password = this.passwordBox.Password;
+      string password = this.RegisterPassword.Password;
 
-      if (this.passwordBox.Password.Length <= 8)
-      {
-        validationErrors += "Password too short (<8). ";
-      }
+      if (password.Length <= 8)
+        validationErrors += "Password too short (<8). \n";
 
-      if (this.passwordBox.Password != this.passwordBox_confirm.Password)
-      {
-        validationErrors += "Passwords do not match. ";
-      }
+      if (password != this.RegisterPasswordConfirm.Password)
+        validationErrors += "Passwords do not match. \n";
 
-      if (validationErrors != "")
-      {
-        this.errors.Foreground = new SolidColorBrush(Colors.Red);
-        this.errors.Text = validationErrors;
-        validationCheckPass = false;
-      }
-      else
-      {
-        this.errors.Foreground = new SolidColorBrush(Colors.Green);
-        this.errors.Text = "Details seem ok. Go ahead!";
-        validationCheckPass = true;
-      }
-
-      if (uriResult != null)
-      {
-        this.server = uriResult;
-      }
-
-
-      if (addr != null)
-        this.email = addr.ToString();
-
-      if (passwordBox.Password != null)
-        this.password = passwordBox.Password;
+      return validationErrors;
     }
 
-    private void registerBtn_Click(object sender, RoutedEventArgs e)
+    private string ValidateLogin()
     {
-      this.validateInputs(this, null);
-      if (!validationCheckPass) return;
+      Debug.WriteLine("validating...");
+      string validationErrors = "";
 
-      bool userCreated = false;
+      Uri uriResult;
+      bool IsUrl = Uri.TryCreate(LoginServerUrl.Text, UriKind.Absolute, out uriResult) &&
+          (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
 
-      using (var client = new WebClient())
+      if (!IsUrl)
+        validationErrors += "Invalid server url. \n";
+
+      ServerAddress = uriResult;
+
+      MailAddress addr = null;
+      try
       {
-        try
-        {
-          string rawPingReply = client.DownloadString(server.ToString());
-          dynamic pingReply = JsonConvert.DeserializeObject(rawPingReply);
-
-          this.serverName = pingReply.serverName;
-          this.restApi = server.ToString();
-
-          Dictionary<string, string> newUser = new Dictionary<string, string>();
-          newUser.Add("email", email);
-          newUser.Add("password", password);
-          newUser.Add("surname", this.SurnameBox.Text);
-          newUser.Add("name", this.NameBox.Text);
-
-          client.Headers[HttpRequestHeader.ContentType] = "application/json";
-
-          string rawUserReply = "";
-
-          try
-          {
-            rawUserReply = client.UploadString(this.restApi + "/accounts/register", "POST", JsonConvert.SerializeObject(newUser, Formatting.None));
-          }
-          catch (WebException err_user)
-          {
-            // failed to create a new user. for some reason or the other.
-            MessageBox.Show("Failed to register user. Have you registered before?");
-            userCreated = false;
-            return;
-          }
-
-          dynamic userReply = JsonConvert.DeserializeObject(rawUserReply); //jss.Deserialize<Dictionary<string, string>>(rawUserReply);
-
-          if (userReply.success == "True")
-          {
-
-            this.apitoken = userReply.apitoken;
-            userCreated = true;
-            saveAccountToDisk(this.email, this.apitoken, this.serverName, this.restApi, this.server.ToString());
-
-            MessageBox.Show("Congrats! You've made an account with " + this.serverName + ". " + "From now you will have access to this account from the existing servers tab.");
-
-            this.Close();
-          }
-          else
-          {
-            MessageBox.Show(userReply.message);
-            userCreated = false;
-            return;
-          }
-
-        }
-        catch (WebException err_ping)
-        {
-          // failed to ping server.
-          if (err_ping.Response != null)
-            MessageBox.Show("Failed to contact server. Did you provide in the correct url? " + err_ping.Response.ToString());
-          else
-            MessageBox.Show("Failed to contact server. Did you provide in the correct url? " + err_ping.ToString());
-          userCreated = false;
-          return;
-        }
+        addr = new System.Net.Mail.MailAddress(this.LoginEmail.Text);
       }
+      catch
+      {
+        validationErrors += "Invalid email address. \n";
+      }
+
+      return validationErrors;
     }
 
-    private void saveAccountToDisk(string _email, string _apitoken, string _serverName, string _restApi, string _rootUrl)
+    private void saveAccountToDisk(string _email, string _apitoken, string _serverName, string _restApi, string _rootUrl, bool _isDefault)
     {
 
       string strPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
@@ -248,7 +146,7 @@ namespace SpecklePopup
 
       string fileName = _email + "." + _apitoken.Substring(0, 4) + ".txt";
 
-      string content = _email + "," + _apitoken + "," + _serverName + "," + _restApi + "," + _rootUrl;
+      string content = _email + "," + _apitoken + "," + _serverName + "," + _restApi + "," + _rootUrl + "," + _isDefault;
 
       Debug.WriteLine(content);
 
@@ -257,40 +155,160 @@ namespace SpecklePopup
       file.Close();
     }
 
-    private void ListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+
+
+    private void AccountListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-      DependencyObject obj = (DependencyObject)e.OriginalSource;
-
-      while (obj != null && obj != existingAccounts)
-      {
-        if (obj.GetType() == typeof(ListViewItem))
-        {
-          var selectedAccount = this.accounts[this.existingAccounts.SelectedIndex];
-          this.restApi = selectedAccount.restApi;
-          this.apitoken = selectedAccount.apiToken;
-          this.Close();
-
-          break;
-        }
-        obj = VisualTreeHelper.GetParent(obj);
-      }
+      this.restApi = this.accounts[this.AccountListBox.SelectedIndex].restApi;
+      this.apitoken = this.accounts[this.AccountListBox.SelectedIndex].apiToken;
+      //this.Close();
     }
 
-    private void UseSelected(object sender, RoutedEventArgs e)
+
+
+    private void RegisterButton_Click(object sender, RoutedEventArgs e)
     {
-      if (this.existingAccounts.SelectedIndex == -1)
+      RegisterButton.IsEnabled = false;
+      RegisterButton.Content = "Contacting server...";
+      var errs = ValidateRegister();
+      if (errs != "")
       {
-        MessageBox.Show("Please select an account first.");
+        MessageBox.Show(errs);
+        RegisterButton.IsEnabled = true;
+        RegisterButton.Content = "Register";
         return;
       }
-      var selectedAccount = this.accounts[this.existingAccounts.SelectedIndex];
-      selectedEmail = selectedAccount.email;
-      selectedServer = selectedAccount.serverName;
-      this.restApi = selectedAccount.restApi;
-      this.apitoken = selectedAccount.apiToken;
-      this.Close();
+
+      var names = this.RegisterName.Text.Split(' ');
+      var myUser = new User()
+      {
+        Email = this.RegisterEmail.Text,
+        Password = this.RegisterPassword.Password,
+        Name = names?[0],
+        Surname = names.Length >= 2 ? names?[1] : null,
+        Company = this.RegisterCompany.Text,
+      };
+
+      string rawPingReply = "";
+      dynamic parsedReply = null;
+      using (var client = new WebClient())
+      {
+        try
+        {
+          rawPingReply = client.DownloadString(ServerAddress.ToString());
+          parsedReply = JsonConvert.DeserializeObject(rawPingReply);
+        }
+        catch { MessageBox.Show("Failed to contact " + ServerAddress.ToString()); RegisterButton.IsEnabled = true; RegisterButton.Content = "Register"; return; }
+      }
+
+      var spkClient = new SpeckleApiClient() { BaseUrl = ServerAddress.ToString() };
+      try
+      {
+        var response = spkClient.UserRegisterAsync(myUser).Result;
+        if (response.Success == false)
+        {
+          MessageBox.Show("Failed to register user. " + response.Message); RegisterButton.IsEnabled = true; RegisterButton.Content = "Register"; return;
+        }
+
+        var serverName = parsedReply.serverName;
+        var isDefault = accounts.Any() ? false : true;
+        saveAccountToDisk(this.RegisterEmail.Text, response.Resource.Apitoken, (string)serverName, this.RegisterServerUrl.Text, this.RegisterServerUrl.Text, isDefault);
+
+        MessageBox.Show("Account creation ok: You're good to go.");
+        this.restApi = this.RegisterServerUrl.Text;
+        this.apitoken = response.Resource.Apitoken;
+        RegisterButton.IsEnabled = true;
+        RegisterButton.Content = "Register";
+
+        AccoutsTabControl.SelectedIndex = 0;
+        LoadAccounts();
+        int index = accounts.Select((v, i) => new { acc = v, index = i }).First(x => x.acc.restApi == RegisterServerUrl.Text && x.acc.email == RegisterEmail.Text).index;
+        AccountListBox.SelectedIndex = index;
+        RegisterServerUrl.Text = RegisterEmail.Text = RegisterName.Text = RegisterCompany.Text = RegisterPassword.Password = RegisterPasswordConfirm.Password = "";
+
+      }
+      catch (Exception err)
+      {
+        MessageBox.Show("Failed to register user. " + err.InnerException.ToString()); RegisterButton.IsEnabled = true; RegisterButton.Content = "Register"; return;
+      }
+    }
+
+    private void LoginButton_Click(object sender, RoutedEventArgs e)
+    {
+      var errs = ValidateLogin();
+      if (errs != "")
+      {
+        MessageBox.Show(errs);
+        return;
+      }
+
+      var myUser = new User()
+      {
+        Email = this.LoginEmail.Text,
+        Password = this.LoginPassword.Password,
+      };
+
+      var spkClient = new SpeckleApiClient() { BaseUrl = ServerAddress.ToString() };
+
+      string rawPingReply = "";
+      dynamic parsedReply = null;
+      using (var client = new WebClient())
+      {
+        try
+        {
+          rawPingReply = client.DownloadString(ServerAddress.ToString());
+          parsedReply = JsonConvert.DeserializeObject(rawPingReply);
+        }
+        catch { MessageBox.Show("Failed to contact " + ServerAddress.ToString()); RegisterButton.IsEnabled = true; RegisterButton.Content = "Register"; return; }
+      }
+
+      var existing = accounts.FirstOrDefault(account => account.email == myUser.Email && account.restApi == ServerAddress.ToString());
+      if (existing != null)
+      {
+        MessageBox.Show("You already have an account on " + ServerAddress.ToString() + " with " + myUser.Email + ".");
+        return;
+      }
+
+
+      try
+      {
+        var response = spkClient.UserLoginAsync(myUser).Result;
+        if (response.Success == false)
+        {
+          MessageBox.Show("Failed to login. " + response.Message); return;
+        }
+
+        var serverName = parsedReply.serverName;
+        var isDefault = accounts.Any() ? false : true;
+        saveAccountToDisk(myUser.Email, response.Resource.Apitoken, (string)serverName, this.ServerAddress.ToString(), this.ServerAddress.ToString(), isDefault);
+
+        MessageBox.Show("Account login ok: You're good to go.");
+        this.restApi = this.RegisterServerUrl.Text;
+        this.apitoken = response.Resource.Apitoken;
+
+        AccoutsTabControl.SelectedIndex = 0;
+        LoadAccounts();
+        int index = accounts.Select((v, i) => new { acc = v, index = i }).First(x => x.acc.restApi == LoginServerUrl.Text && x.acc.email == LoginEmail.Text).index;
+        AccountListBox.SelectedIndex = index;
+        LoginServerUrl.Text = LoginEmail.Text = LoginPassword.Password = "";
+      }
+      catch (Exception err)
+      {
+        MessageBox.Show("Failed to login user. " + err.InnerException.ToString()); return;
+      }
+
+    }
+
+    private void RadioButton_Click(object sender, RoutedEventArgs e)
+    {
+      foreach (var account in accounts)
+      {
+        //overwrite existing settings with new IsDefaut value
+        saveAccountToDisk(account.email, account.apiToken, account.serverName, account.restApi, account.rootUrl, account.isDefault);
+      }
     }
   }
+
 
   public class SpeckleAccount
   {
@@ -299,6 +317,6 @@ namespace SpecklePopup
     public string serverName { get; set; }
     public string restApi { get; set; }
     public string rootUrl { get; set; }
+    public bool isDefault { get; set; }
   }
-}
 }

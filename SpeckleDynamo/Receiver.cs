@@ -190,7 +190,9 @@ namespace SpeckleDynamo
       myForm.Owner = Application.Current.MainWindow;
       Application.Current.Dispatcher.BeginInvoke((Action)(() =>
       {
-        myForm.ShowDialog();
+        //if default account exists form is closed automatically
+        if (myForm.IsActive)
+          myForm.ShowDialog();
         if (myForm.restApi != null && myForm.apitoken != null)
         {
           Email = myForm.selectedEmail;

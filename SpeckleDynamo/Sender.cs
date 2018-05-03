@@ -18,9 +18,9 @@ namespace SpeckleDynamo
   [NodeCategory("Speckle.IO")]
 
   //Outputs
-  [OutPortNames("Log", "ID")]
-  [OutPortDescriptions("Log Data", "Stream ID")]
-  [OutPortTypes("string", "string")]
+  //[OutPortNames("Log", "ID")]
+  //[OutPortDescriptions("Log Data", "Stream ID")]
+  //[OutPortTypes("string", "string")]
 
   [IsDesignScriptCompatible]
   public class Sender : VariableInputNode, INotifyPropertyChanged
@@ -141,7 +141,9 @@ namespace SpeckleDynamo
       myForm.Owner = Application.Current.MainWindow;
       Application.Current.Dispatcher.BeginInvoke((Action)(() =>
       {
-        myForm.ShowDialog();
+        //if default account exists form is closed automatically
+        if(myForm.IsActive)
+          myForm.ShowDialog();
         if (myForm.restApi != null && myForm.apitoken != null)
         {
           mySender = new SpeckleApiClient(myForm.restApi);
