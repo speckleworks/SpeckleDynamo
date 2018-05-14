@@ -34,6 +34,8 @@ namespace SpeckleDynamo
     private string _stream;
     private string _message = "Initialising...";
 
+
+
     public string AuthToken { get => _authToken; set { _authToken = value; NotifyPropertyChanged("AuthToken"); } }
     public string RestApi { get => _restApi; set { _restApi = value; NotifyPropertyChanged("RestApi"); } }
     public string Email { get => _email; set { _email = value; NotifyPropertyChanged("Email"); } }
@@ -48,10 +50,17 @@ namespace SpeckleDynamo
     private string BucketName;
     private List<Layer> BucketLayers = new List<Layer>();
     private List<object> BucketObjects = new List<object>();
+    public Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
+    private List<object> DataBridgeData = new List<object>();
+
+    //The node is expired 3 times when a port is added/removed!!!
+    private int _updatingPorts = 0;
 
 
     public Sender()
     {
+      var hack = new ConverterHack();
+
       //needs to be done here otherwise outports are wiped out upon adding /removing input ports, not sure why
       OutPortData.Add(new PortData("Log", "Log Data"));
       OutPortData.Add(new PortData("ID", "Stream ID"));
@@ -86,14 +95,16 @@ namespace SpeckleDynamo
       ArrayList inputs = obj as ArrayList;
       try
       {
-        //TODO: handle data conversion
-        var data = new List<object>();
-        foreach (var i in inputs)
+        DataBridgeData = new List<object>();
+        for (var i = 0; i < inputs.Count; i++)
         {
-          data.Add(inputs[0]);
+          if(!this.HasConnectedInput(i))
+            DataBridgeData.Add(new List<object>());
+          else 
+            DataBridgeData.Add(inputs[i]);
         }
 
-        UpdateData(data);
+        UpdateData();
 
       }
       catch (Exception ex)
@@ -106,29 +117,82 @@ namespace SpeckleDynamo
 
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
+      if(mySender == null)
+        return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode())};
 
-      if (!HasConnectedInput(0))
-        return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
+      var associativeNodes = new List<AssociativeNode> {
+                     AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildStringNode(Log)),
+                     AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(1), AstFactory.BuildStringNode(mySender.StreamId)) };
 
+      //if node expired just because a port was added/removed don't bother updating global
+      if (_updatingPorts > 0)
+      {
+        _updatingPorts--;
+        return associativeNodes;
+      }
+        
+      if (InPortData.Count == 0)
+        return associativeNodes;
 
       //using BridgeData to get value of input from within the node itself
-      return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildStringNode(Log)),
-                     AstFactory.BuildAssignment(
+      associativeNodes.Add(AstFactory.BuildAssignment(
                         AstFactory.BuildIdentifier(AstIdentifierBase + "_dummy"),
-                        VMDataBridge.DataBridge.GenerateBridgeDataAst(GUID.ToString(), AstFactory.BuildExprList(inputAstNodes))
-                    )};
+                        VMDataBridge.DataBridge.GenerateBridgeDataAst(GUID.ToString(), AstFactory.BuildExprList(inputAstNodes))));
+      
+      return associativeNodes;
     }
 
-    public void UpdateData(List<object> data)
+    public void UpdateData()
     {
       BucketName = this.NickName;
-      //TODO: handle layers
-      // BucketLayers = this.GetLayers();
-      BucketObjects = data;
-      //BucketObjects = this.GetData();
+      BucketLayers = this.GetLayers();
+      BucketObjects = DataBridgeData;
 
       DataSender.Start();
     }
+
+    public List<Layer> GetLayers()
+    {
+      List<Layer> layers = new List<Layer>();
+      int startIndex = 0;
+      int orderIndex = 0;
+      foreach (var myParam in InPortData)
+      {
+        string topo = "";
+        int count = 0;
+        var data = DataBridgeData.Count - 1 >= orderIndex ? DataBridgeData[orderIndex] : null;
+        GetTopology(data, ref topo, ref count);
+
+
+        Layer myLayer = new Layer(
+            myParam.NickName,
+            myParam.ToolTipString,
+            topo,
+            count,
+            startIndex,
+            orderIndex);
+
+        layers.Add(myLayer);
+        startIndex += count;
+        orderIndex++;
+      }
+      return layers;
+    }
+
+    //TODO: support nesting / datatrees
+    private void GetTopology(object data, ref string topo, ref int count)
+    {
+      if (data is List<object>)
+      {
+        var objects = data as List<object>;
+        count = objects.Count;
+      }
+      else
+        count = 1;
+      topo = "0-" + count+" ";
+    }
+
+
 
     internal void ForceSendClick(object sender, RoutedEventArgs e)
     {
@@ -142,7 +206,7 @@ namespace SpeckleDynamo
       Application.Current.Dispatcher.BeginInvoke((Action)(() =>
       {
         //if default account exists form is closed automatically
-        if(myForm.IsActive)
+        if (myForm.IsActive)
           myForm.ShowDialog();
         if (myForm.restApi != null && myForm.apitoken != null)
         {
@@ -177,10 +241,10 @@ namespace SpeckleDynamo
       mySender.OnReady += (sender, e) =>
         {
           Stream = mySender.StreamId;
-        //this.Locked = false;
-        NickName = "Anonymous Stream";
-        //Rhino.RhinoApp.MainApplicationWindow.Invoke(ExpireComponentAction);
-      };
+          //this.Locked = false;
+          NickName = "Anonymous Stream";
+          //Rhino.RhinoApp.MainApplicationWindow.Invoke(ExpireComponentAction);
+        };
 
       mySender.OnWsMessage += OnWsMessage;
 
@@ -194,21 +258,20 @@ namespace SpeckleDynamo
         this.Log += DateTime.Now.ToString("dd:HH:mm:ss ") + e.EventData + "\n";
         throw new WarningException(e.EventName + ": " + e.EventData);
       };
-      //TODO:
+      //TODO: check this
       //ExpireComponentAction = () => ExpireSolution(true);
-
-      //ObjectChanged += (sender, e) => UpdateMetadata();
+      //this.Modified += (sender) => UpdateMetadata();
 
       //foreach (var param in Params.Input)
       //  param.ObjectChanged += (sender, e) => UpdateMetadata();
 
       MetadataSender = new System.Timers.Timer(1000) { AutoReset = false, Enabled = false };
-      //MetadataSender.Elapsed += MetadataSender_Elapsed;
+      MetadataSender.Elapsed += MetadataSender_Elapsed;
 
       DataSender = new System.Timers.Timer(2000) { AutoReset = false, Enabled = false };
       DataSender.Elapsed += DataSender_Elapsed;
 
-      //ObjectCache = new Dictionary<string, SpeckleObject>();
+      ObjectCache = new Dictionary<string, SpeckleObject>();
     }
 
     private void DataSender_Elapsed(object sender, ElapsedEventArgs e)
@@ -222,15 +285,12 @@ namespace SpeckleDynamo
 
       this.Message = String.Format("Converting {0} \n objects", BucketObjects.Count);
 
-      var convertedObjects = Converter.Serialise(BucketObjects).ToList();
-
-      //TODO: cache
-      //var convertedObjects = Converter.Serialise(BucketObjects).Select(obj =>
-      //{
-      //  if (ObjectCache.ContainsKey(obj.Hash))
-      //    return new SpecklePlaceholder() { Hash = obj.Hash, _id = ObjectCache[obj.Hash]._id };
-      //  return obj;
-      //}).ToList();
+      var convertedObjects = Converter.Serialise(BucketObjects).Select(obj =>
+      {
+        if (ObjectCache.ContainsKey(obj.Hash))
+          return new SpecklePlaceholder() { Hash = obj.Hash, _id = ObjectCache[obj.Hash]._id };
+        return obj;
+      }).ToList();
 
       this.Message = String.Format("Creating payloads");
 
@@ -301,18 +361,40 @@ namespace SpeckleDynamo
 
       mySender.BroadcastMessage(new { eventType = "update-global" });
 
-      //TODO: add cache
-      // put the objects in the cache 
-      //int l = 0;
-      //foreach (var obj in placeholders)
-      //{
-      //  ObjectCache[convertedObjects[l].Hash] = placeholders[l];
-      //  l++;
-      //}
+      //put the objects in the cache
+      int l = 0;
+      foreach (var obj in placeholders)
+      {
+        ObjectCache[convertedObjects[l].Hash] = placeholders[l];
+        l++;
+      }
 
       Log += response.Result.Message;
-      //AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "Data sent at " + DateTime.Now);
       Message = "Data sent\n@" + DateTime.Now.ToString("HH:mm:ss");
+     
+    }
+
+    public void UpdateMetadata()
+    {
+      BucketName = this.NickName;
+      BucketLayers = this.GetLayers();
+      MetadataSender.Start();
+    }
+
+    private void MetadataSender_Elapsed(object sender, ElapsedEventArgs e)
+    {
+      // we do not need to enque another metadata sending event as the data update superseeds the metadata one.
+      if (DataSender.Enabled) { return; };
+      SpeckleStream updateStream = new SpeckleStream()
+      {
+        Name = BucketName,
+        Layers = BucketLayers
+      };
+
+      var updateResult = mySender.StreamUpdateAsync(mySender.StreamId, updateStream).GetAwaiter().GetResult();
+
+      Log += updateResult.Message;
+      mySender.BroadcastMessage(new { eventType = "update-meta" });
     }
 
     public virtual void OnWsMessage(object source, SpeckleEventArgs e)
@@ -337,14 +419,19 @@ namespace SpeckleDynamo
 
     protected override void AddInput()
     {
+      _updatingPorts = 3;
       base.AddInput();
       InPortData.Last().NickName = string.Join("", GetSequence().ElementAt(InPorts.Count));
+      InPortData.Last().ToolTipString = Guid.NewGuid().ToString();
+      UpdateMetadata();
     }
 
     protected override void RemoveInput()
     {
+      _updatingPorts = 3;
       if (InPorts.Count > 1)
         base.RemoveInput();
+      UpdateMetadata();
     }
 
     public override bool IsConvertible

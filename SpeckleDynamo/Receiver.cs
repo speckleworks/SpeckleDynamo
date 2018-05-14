@@ -38,6 +38,8 @@ namespace SpeckleDynamo
     private string _message = "Initialising...";
     private bool _paused = false;
 
+    private bool _registeringPorts = false;
+
     public string AuthToken { get => _authToken; set { _authToken = value; NotifyPropertyChanged("AuthToken"); } }
     public string RestApi { get => _restApi; set { _restApi = value; NotifyPropertyChanged("RestApi"); } }
     public string Email { get => _email; set { _email = value; NotifyPropertyChanged("Email"); } }
@@ -53,13 +55,18 @@ namespace SpeckleDynamo
     internal SpeckleApiClient myReceiver;
     List<Layer> Layers;
     List<SpeckleObject> SpeckleObjects;
-    //List<object> ConvertedObjects;
+    List<object> ConvertedObjects;
 
     private readonly SynchronizationContext _context;
     private bool hasNewData = false;
 
+
+    private Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
+
     public Receiver()
     {
+      var hack = new ConverterHack();
+
       RegisterAllPorts();
 
       //for handling code execution on main thread, better ideas welcome
@@ -68,12 +75,61 @@ namespace SpeckleDynamo
 
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
-      if (!hasNewData)
+      if (!hasNewData || _registeringPorts)
         return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
       else
       {
         Message = "Data received\n@" + DateTime.Now.ToString("HH:mm:ss");
-        return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildStringNode(string.Join(",", SpeckleObjects.Select(x => x.ToJson()).ToList()))) };
+        if (Layers == null || ConvertedObjects.Count == 0)
+          return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
+
+        var associativeNodes = new List<AssociativeNode>();
+        foreach (Layer layer in Layers)
+        {
+
+          var subset = ConvertedObjects.GetRange((int)layer.StartIndex, (int)layer.ObjectCount);
+          //if (layer.Topology == "")
+          //{
+            Functions.SpeckleTempData.AddLayerObjects(Stream+layer.Guid, subset);
+
+            var functionCall = AstFactory.BuildFunctionCall(
+             new Func<string, object>(Functions.Functions.SpeckleOutput),
+             new List<AssociativeNode>
+             {
+                AstFactory.BuildStringNode(Stream+layer.Guid)
+             });
+
+            associativeNodes.Add(AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex((int)layer.OrderIndex), functionCall));
+          //}
+         
+          //else
+          //{
+          //  //HIC SVNT DRACONES
+          //  var tree = new DataTree<object>();
+          //  var treeTopo = layer.Topology.Split(' ');
+          //  int subsetCount = 0;
+          //  foreach (var branch in treeTopo)
+          //  {
+          //    if (branch != "")
+          //    {
+          //      var branchTopo = branch.Split('-')[0].Split(';');
+          //      var branchIndexes = new List<int>();
+          //      foreach (var t in branchTopo) branchIndexes.Add(Convert.ToInt32(t));
+
+          //      var elCount = Convert.ToInt32(branch.Split('-')[1]);
+          //      GH_Path myPath = new GH_Path(branchIndexes.ToArray());
+
+          //      for (int i = 0; i < elCount; i++)
+          //        tree.EnsurePath(myPath).Add(new Grasshopper.Kernel.Types.GH_ObjectWrapper(subset[subsetCount + i]));
+          //      subsetCount += elCount;
+          //    }
+          //  }
+
+          //}
+
+        }
+
+        return associativeNodes;
       }
     }
 
@@ -90,48 +146,123 @@ namespace SpeckleDynamo
       // we can safely omit the displayValue, since this is rhino!
       Message = "Getting objects";
 
-      var payload = getStream.Result.Resource.Objects.Select(obj => obj._id).ToArray();
-      //var payload = getStream.Result.Resource.Objects.Where(o => !ObjectCache.ContainsKey(o._id)).Select(obj => obj._id).ToArray();
+      var payload = getStream.Result.Resource.Objects.Where(o => !ObjectCache.ContainsKey(o._id)).Select(obj => obj._id).ToArray();
 
-      SpeckleObjects = myReceiver.ObjectGetBulkAsync(payload, "omit=displayValue").Result.Resources;
-      hasNewData = true;
+      myReceiver.ObjectGetBulkAsync(payload, "omit=displayValue").ContinueWith(tres =>
+      {
+        //add to cache
+        foreach (var x in tres.Result.Resources)
+          ObjectCache[x._id] = x;
 
-      //expire node on main thread
-      _context.Post(ExpireNode, "");
+        // populate real objects
+        SpeckleObjects.Clear();
+        foreach (var obj in getStream.Result.Resource.Objects)
+          SpeckleObjects.Add(ObjectCache[obj._id]);
 
+        this.Message = "Converting objects";
+        ConvertedObjects = SpeckleCore.Converter.Deserialise(SpeckleObjects);
 
-      //TODO: handle conversion
-      //TODO: update outportstructure
-      //TODO: handle layers
-      //myReceiver.ObjectGetBulkAsync(payload, "omit=displayValue").ContinueWith(tres =>
-      //{
-      //  // add to cache
-      //  //foreach (var x in tres.Result.Resources)
-      //  //  ObjectCache[x._id] = x;
+        if (ConvertedObjects.Count != SpeckleObjects.Count)
+        {
+          Console.WriteLine("Some objects failed to convert.");
+        }
 
-      //  // populate real objects
-      //  //SpeckleObjects.Clear();
-      //  //foreach (var obj in getStream.Result.Resource.Objects)
-      //  //  SpeckleObjects.Add(ObjectCache[obj._id]);
+        this.Message = "Updating...";
 
-      // // this.Message = "Converting objects";
-      //  //ConvertedObjects = SpeckleCore.Converter.Deserialise(tres.Result.Resources);
+        _context.Post(UpdateOutputStructure, "");
+        Message = "Got data\n@" + DateTime.Now.ToString("hh:mm:ss");
+        //expire node on main thread
+        hasNewData = true;
+        _context.Post(ExpireNode, "");
 
-      //  //if (ConvertedObjects.Count != SpeckleObjects.Count)
-      //  //{
-      //  //  this.AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Some objects failed to convert.");
-      //  //}
+      });
+    }
 
-      // // this.Message = "Updating...";
-      // // UpdateOutputStructure();
+    public virtual void UpdateMeta()
+    {
+      var result = myReceiver.StreamGetAsync(myReceiver.StreamId, "fields=name,layers").Result;
 
-      // // Message = "Got data\n@" + DateTime.Now.ToString("hh:mm:ss");
+      NickName = result.Resource.Name;
+      Layers = result.Resource.Layers.ToList();
+      //run on main thread
+      _context.Post(UpdateOutputStructure, "");
+    }
 
-      //  //Rhino.RhinoApp.MainApplicationWindow.Invoke(expireComponentAction);
-      //});
+    public virtual void UpdateChildren()
+    {
+      var result = myReceiver.StreamGetAsync(myReceiver.StreamId, "fields=children").Result;
+      myReceiver.Stream.Children = result.Resource.Children;
+    }
+
+    public void UpdateOutputStructure()
+    {
+      List<Layer> toRemove, toAdd, toUpdate;
+      toRemove = new List<Layer>();
+      toAdd = new List<Layer>();
+      toUpdate = new List<Layer>();
+
+      Layer.DiffLayerLists(GetLayers(), Layers, ref toRemove, ref toAdd, ref toUpdate);
+
+      foreach (Layer layer in toRemove)
+      {
+        var myparam = OutPortData.FirstOrDefault(item => { return item.NickName == layer.Name; });
+
+        if (myparam != null)
+          OutPortData.Remove(myparam);
+      }
+
+      foreach (var layer in toAdd)
+      {
+        OutPortData.Add(getGhParameter(layer));
+      }
+
+      foreach (var layer in toUpdate)
+      {
+        var myparam = OutPortData.FirstOrDefault(item => { return item.ToolTipString == layer.Guid; });
+        myparam.NickName = layer.Name;
+      }
+
+      _registeringPorts = true;
+      RegisterOutputPorts();
+      ValidateConnections();
+      _registeringPorts = false;
+    }
+
+    public List<Layer> GetLayers()
+    {
+      List<Layer> layers = new List<Layer>();
+      int startIndex = 0;
+      int count = 0;
+      foreach (var myParam in OutPortData)
+      {
+        // NOTE: For gh receivers, we store the original guid of the sender component layer inside the parametr name.
+        Layer myLayer = new Layer(
+            myParam.NickName,
+            myParam.ToolTipString,
+            "",  //todo: check this
+            0, //todo: check this
+            startIndex,
+            count);
+
+        layers.Add(myLayer);
+        // startIndex += myParam.VolatileDataCount;
+        count++;
+      }
+      return layers;
     }
 
 
+    private PortData getGhParameter(Layer param)
+    {
+      //guid stored in tooltip!
+      PortData newParam = new PortData(param.Name, param.Guid);
+      return newParam;
+    }
+
+    public void UpdateOutputStructure(object o)
+    {
+      UpdateOutputStructure();
+    }
     private void ExpireNode(object o)
     {
       ExpireNode();
@@ -143,11 +274,11 @@ namespace SpeckleDynamo
 
     internal void InitReceiverEventsAndGlobals()
     {
-      //ObjectCache = new Dictionary<string, SpeckleObject>();
+      ObjectCache = new Dictionary<string, SpeckleObject>();
 
       SpeckleObjects = new List<SpeckleObject>();
 
-      //  ConvertedObjects = new List<object>();
+      ConvertedObjects = new List<object>();
 
       myReceiver.OnReady += (sender, e) =>
       {
@@ -239,16 +370,15 @@ namespace SpeckleDynamo
         case "update-global":
           UpdateGlobal();
           break;
-        //TODO: implement other update types
-        //case "update-meta":
-        //  UpdateMeta();
-        //  break;
-        //case "update-name":
-        //  UpdateMeta();
-        //  break;
-        //case "update-children":
-        //  UpdateChildren();
-        //  break;
+        case "update-meta":
+          UpdateMeta();
+          break;
+        case "update-name":
+          UpdateMeta();
+          break;
+        case "update-children":
+          UpdateChildren();
+          break;
         default:
           //CustomMessageHandler((string)e.EventObject.args.eventType, e);
           break;
