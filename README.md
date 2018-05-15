@@ -1,5 +1,7 @@
 # SpeckleDynamo
-Placeholder for the future: contributions welcome. Feel free to hack something up and drop it in here :) 
+There's nothing here!
+
+Check the `dev` branch for the latest WIP.
 
 ## About Speckle
 
