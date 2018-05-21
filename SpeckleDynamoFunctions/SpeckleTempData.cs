@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Autodesk.DesignScript.Runtime;
 
 namespace SpeckleDynamo.Functions
 {
@@ -11,6 +12,7 @@ namespace SpeckleDynamo.Functions
   /// this project to the Functions dll in order to output it correctly
   /// In the future could be replaced with a local caching DB
   /// </summary>
+  [IsVisibleInDynamoLibrary(false)]
   public static class SpeckleTempData
   {
     private static Dictionary<string, object> SpeckleLayers = new Dictionary<string, object>();
