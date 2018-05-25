@@ -145,6 +145,7 @@ namespace SpeckleDynamo
       return b.Value;
     }
 
+
     // Mass point converter
     public static Point[] ToPoints(this IEnumerable<double> arr)
     {
@@ -266,7 +267,7 @@ namespace SpeckleDynamo
     // Rectangles now and forever forward will become polylines
     public static SpecklePolyline ToSpeckle(this Rectangle rect)
     {
-      return new SpecklePolyline((new Point[] { rect.Points[0], rect.Points[1], rect.Points[2], rect.Points[3] }).ToFlatArray()) { closed = true };
+      return new SpecklePolyline((new Point[] { rect.Points[0], rect.Points[1], rect.Points[2], rect.Points[3] }).ToFlatArray());
     }
 
     // Circle

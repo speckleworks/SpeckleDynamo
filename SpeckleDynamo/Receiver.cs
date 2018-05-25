@@ -20,12 +20,6 @@ namespace SpeckleDynamo
   [InPortTypes("string")]
   [InPortDescriptions("Stream ID")]
 
-
-  //TODO: dynamically generate out ports
-  [OutPortNames("A")]
-  [OutPortTypes("string")]
-  [OutPortDescriptions("No data received yet")]
-
   [IsDesignScriptCompatible]
   public class Receiver : NodeModel, INotifyPropertyChanged
   {
@@ -33,10 +27,14 @@ namespace SpeckleDynamo
     private string _restApi;
     private string _email;
     private string _server;
-    private string _stream;
-    private string _oldStream;
+    private string _streamId;
+    private string _oldStreamId;
     private string _message = "Initialising...";
     private bool _paused = false;
+
+    private int elCount = 0;
+    private int subsetCount = 0;
+    private List<object> subset = new List<object>();
 
     private bool _registeringPorts = false;
 
@@ -44,7 +42,9 @@ namespace SpeckleDynamo
     public string RestApi { get => _restApi; set { _restApi = value; NotifyPropertyChanged("RestApi"); } }
     public string Email { get => _email; set { _email = value; NotifyPropertyChanged("Email"); } }
     public string Server { get => _server; set { _server = value; NotifyPropertyChanged("Server"); } }
-    public string Stream { get => _stream; set { _stream = value; NotifyPropertyChanged("Stream"); } }
+    public string StreamId { get => _streamId; set
+      { _streamId = value; NotifyPropertyChanged("StreamId");
+      } }
 
     public string Message { get => _message; set { _message = value; NotifyPropertyChanged("Message"); } }
     public bool Paused { get => _paused; set { _paused = value; NotifyPropertyChanged("Paused"); NotifyPropertyChanged("Receiving"); } }
@@ -87,50 +87,99 @@ namespace SpeckleDynamo
         foreach (Layer layer in Layers)
         {
 
-          var subset = ConvertedObjects.GetRange((int)layer.StartIndex, (int)layer.ObjectCount);
-          //if (layer.Topology == "")
-          //{
-            Functions.SpeckleTempData.AddLayerObjects(Stream+layer.Guid, subset);
+          subset = ConvertedObjects.GetRange((int)layer.StartIndex, (int)layer.ObjectCount);
+          if (layer.Topology == "")
+          {
+            Functions.SpeckleTempData.AddLayerObjects(StreamId + layer.Guid, subset);
+          }
 
-            var functionCall = AstFactory.BuildFunctionCall(
-             new Func<string, object>(Functions.Functions.SpeckleOutput),
-             new List<AssociativeNode>
-             {
-                AstFactory.BuildStringNode(Stream+layer.Guid)
-             });
+          else
+          {
+            //HIC SVNT DRACONES
+            var tree = new List<object>();
+            var treeTopo = layer.Topology.Split(' ').Where(x => x != "");
+            subsetCount = 0;
+            foreach (var branch in treeTopo)
+            {
 
-            associativeNodes.Add(AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex((int)layer.OrderIndex), functionCall));
-          //}
-         
-          //else
-          //{
-          //  //HIC SVNT DRACONES
-          //  var tree = new DataTree<object>();
-          //  var treeTopo = layer.Topology.Split(' ');
-          //  int subsetCount = 0;
-          //  foreach (var branch in treeTopo)
-          //  {
-          //    if (branch != "")
-          //    {
-          //      var branchTopo = branch.Split('-')[0].Split(';');
-          //      var branchIndexes = new List<int>();
-          //      foreach (var t in branchTopo) branchIndexes.Add(Convert.ToInt32(t));
+              var branchTopo = branch.Split('-')[0].Split(';');
+              var branchIndexes = new List<int>();
+              foreach (var t in branchTopo)
+                branchIndexes.Add(Convert.ToInt32(t));
 
-          //      var elCount = Convert.ToInt32(branch.Split('-')[1]);
-          //      GH_Path myPath = new GH_Path(branchIndexes.ToArray());
+              elCount = Convert.ToInt32(branch.Split('-')[1]);
 
-          //      for (int i = 0; i < elCount; i++)
-          //        tree.EnsurePath(myPath).Add(new Grasshopper.Kernel.Types.GH_ObjectWrapper(subset[subsetCount + i]));
-          //      subsetCount += elCount;
-          //    }
-          //  }
+              RecursivelyCreateNestedLists(tree, branchIndexes, 0);
 
-          //}
+            }
+
+            object output;
+
+            //if only one branch simplify output structure
+            if (treeTopo.Count() == 1)
+            {
+              //if only one item simplify output structure
+              if (tree[0] is List<object> && (tree[0] as List<object>).Count == 1)
+                output = (tree[0] as List<object>)[0];
+              else
+                output = tree[0];
+            }
+             
+            else
+              output = tree;
+
+            Functions.SpeckleTempData.AddLayerObjects(StreamId + layer.Guid, output);
+
+          }
+
+
+
+          var functionCall = AstFactory.BuildFunctionCall(
+           new Func<string, object>(Functions.Functions.SpeckleOutput),
+           new List<AssociativeNode>
+           {
+                AstFactory.BuildStringNode(StreamId+layer.Guid)
+           });
+
+          associativeNodes.Add(AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex((int)layer.OrderIndex), functionCall));
 
         }
 
         return associativeNodes;
       }
+    }
+
+    private void RecursivelyCreateNestedLists(List<object> tree, List<int> branchIndexes, int currentIndexPosition)
+    {
+      try
+      {
+        var index = branchIndexes[currentIndexPosition];
+        //add missing branches
+        while (tree.Count <= index || !(tree.ElementAt(index) is List<object>))
+        {
+          if (tree.Count > index)
+            tree.Insert(index, new List<object>());
+          else
+            tree.Add(new List<object>());
+        }
+        //when reaching the end of the path just add the elements
+        if (branchIndexes.Count == currentIndexPosition + 1)
+        {
+          for (int i = 0; i < elCount; i++)
+            (tree[index] as List<object>).Add(subset[subsetCount + i]);
+          subsetCount += elCount;
+
+
+          return;
+        }
+        RecursivelyCreateNestedLists((tree[index] as List<object>), branchIndexes, currentIndexPosition + 1);
+
+      }
+      catch (Exception e)
+      {
+        Console.WriteLine(e);
+      }
+
     }
 
     public virtual void UpdateGlobal()
@@ -289,6 +338,8 @@ namespace SpeckleDynamo
 
       myReceiver.OnError += (sender, e) =>
       {
+        if (e.EventName == "websocket-disconnected")
+          return;
         throw new WarningException(e.EventName + ": " + e.EventData);
       };
 
@@ -296,9 +347,9 @@ namespace SpeckleDynamo
 
     internal void Stream_LostFocus(object sender, RoutedEventArgs e)
     {
-      if (Stream == _oldStream)
+      if (StreamId == _oldStreamId)
         return;
-      _oldStream = Stream;
+      _oldStreamId = StreamId;
       //TODO: check integrity of stream id? Maybe length comparison?
       Console.WriteLine("Changing streams...");
 
@@ -310,7 +361,7 @@ namespace SpeckleDynamo
       InitReceiverEventsAndGlobals();
 
       //TODO: get documentname and guid, not sure how... Maybe with an extension?
-      myReceiver.IntializeReceiver(Stream, "none", "Dynamo", "none", AuthToken);
+      myReceiver.IntializeReceiver(StreamId, "none", "Dynamo", "none", AuthToken);
 
 
     }
@@ -383,6 +434,13 @@ namespace SpeckleDynamo
           //CustomMessageHandler((string)e.EventObject.args.eventType, e);
           break;
       }
+    }
+
+    public override void Dispose()
+    {
+      if (myReceiver != null)
+        myReceiver.Dispose();
+      base.Dispose();
     }
 
     public event PropertyChangedEventHandler PropertyChanged;

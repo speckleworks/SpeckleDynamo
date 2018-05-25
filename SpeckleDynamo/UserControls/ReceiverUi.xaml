@@ -34,7 +34,7 @@
       Margin="5"
       materialDesign:HintAssist.Hint="Stream ID"
       Style="{StaticResource MaterialDesignFloatingHintTextBox}"
-      Text="{Binding Stream}" />
+      Text="{Binding StreamId}" />
     <Button
       Name="PausePlayButton"
       Grid.Row="1"

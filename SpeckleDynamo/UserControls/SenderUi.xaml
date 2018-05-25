@@ -41,7 +41,7 @@
       materialDesign:HintAssist.Hint="Stream ID"
       IsReadOnly="true"
       Style="{StaticResource MaterialDesignFloatingHintTextBox}"
-      Text="{Binding Stream}" />
+      Text="{Binding StreamId}" />
     <Button
       Name="ForceSend"
       Grid.Row="2"
