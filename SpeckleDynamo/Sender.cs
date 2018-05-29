@@ -237,10 +237,6 @@ namespace SpeckleDynamo
           RecursivelyFlattenData(list[i] as ArrayList, flattenedList);
         else
         {
-          ////TODO: remove once nulls are supported
-          //if (list[i] == null)
-          //  flattenedList.Add("null");
-          //else
             flattenedList.Add(list[i]);
         }
          

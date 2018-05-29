@@ -191,7 +191,7 @@ namespace SpeckleDynamo
       NickName = getStream.Result.Resource.Name;
       Layers = getStream.Result.Resource.Layers.ToList();
 
-      // TODO: Implement cache
+      // TODO: check statement below with dimitrie
       // we can safely omit the displayValue, since this is rhino!
       Message = "Getting objects";
 
@@ -350,7 +350,7 @@ namespace SpeckleDynamo
       if (StreamId == _oldStreamId)
         return;
       _oldStreamId = StreamId;
-      //TODO: check integrity of stream id? Maybe length comparison?
+
       Console.WriteLine("Changing streams...");
 
       if (myReceiver != null)

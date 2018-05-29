@@ -14,7 +14,6 @@
     <WarningLevel>4</WarningLevel>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <StartAction>Program</StartAction>
-    <StartProgram>C:\Program Files\Dynamo\Dynamo Revit\1.3\DynamoSandbox.exe</StartProgram>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -36,6 +35,57 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <!-- START MULTI VERSION CONFIGURATION -->
+  <!-- ADDING BUILD COFIGURATION FOR EACH VERSION, DEBUG AND RELEASE -->
+  <!-- 1.3 -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug-1.3|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug-1.3\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;Version1.3</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <StartAction>Program</StartAction>
+    <StartProgram>C:\Program Files\Dynamo\Dynamo Revit\1.3\DynamoSandbox.exe</StartProgram>
+    <DynamoVersion>1.3</DynamoVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release-1.3|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release-1.3\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DynamoVersion>1.3</DynamoVersion>
+  </PropertyGroup>
+  <!-- 2.0 -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug-2.0|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug-2\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;Version2.0</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <StartAction>Program</StartAction>
+    <StartProgram>C:\Program Files\Dynamo\Dynamo Core\2\DynamoSandbox.exe</StartProgram>
+    <DynamoVersion>2.0</DynamoVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release-2.0|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release-2.0\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DynamoVersion>2.0</DynamoVersion>
+  </PropertyGroup>
+  <!-- END MULTIVERSION CONFIGURATION -->
   <PropertyGroup>
     <StartupObject />
   </PropertyGroup>
@@ -94,18 +144,34 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="DynamoVisualProgramming.Core" IncludeAssets="build;compile">
+    <!-- START MULTIVERSION REFERENCES -->
+    <!-- 1.3 -->
+    <PackageReference Include="DynamoVisualProgramming.Core" IncludeAssets="build;compile" Condition="'$(Configuration)' == 'Debug-1.3' Or '$(Configuration)' == 'Release-1.3'">
       <Version>1.3.0</Version>
     </PackageReference>
-    <PackageReference Include="DynamoVisualProgramming.DynamoServices" IncludeAssets="build;compile">
+    <PackageReference Include="DynamoVisualProgramming.DynamoServices" IncludeAssets="build;compile" Condition="'$(Configuration)' == 'Debug-1.3' Or '$(Configuration)' == 'Release-1.3'">
       <Version>1.3.0</Version>
     </PackageReference>
-    <PackageReference Include="DynamoVisualProgramming.WpfUILibrary" IncludeAssets="build;compile">
+    <PackageReference Include="DynamoVisualProgramming.WpfUILibrary" IncludeAssets="build;compile" Condition="'$(Configuration)' == 'Debug-1.3' Or '$(Configuration)' == 'Release-1.3'">
       <Version>1.3.0</Version>
     </PackageReference>
-    <PackageReference Include="DynamoVisualProgramming.ZeroTouchLibrary" IncludeAssets="build;compile">
+    <PackageReference Include="DynamoVisualProgramming.ZeroTouchLibrary" IncludeAssets="build;compile" Condition="'$(Configuration)' == 'Debug-1.3' Or '$(Configuration)' == 'Release-1.3'">
       <Version>1.3.0</Version>
     </PackageReference>
+    <!-- 2.0 -->
+    <PackageReference Include="DynamoVisualProgramming.Core" IncludeAssets="build;compile" Condition="'$(Configuration)' == 'Debug-2.0' Or '$(Configuration)' == 'Release-2.0'">
+      <Version>2.0.1.5055</Version>
+    </PackageReference>
+    <PackageReference Include="DynamoVisualProgramming.DynamoServices" IncludeAssets="build;compile" Condition="'$(Configuration)' == 'Debug-2.0' Or '$(Configuration)' == 'Release-2.0'">
+      <Version>2.0.1.5055</Version>
+    </PackageReference>
+    <PackageReference Include="DynamoVisualProgramming.WpfUILibrary" IncludeAssets="build;compile" Condition="'$(Configuration)' == 'Debug-2.0' Or '$(Configuration)' == 'Release-2.0'">
+      <Version>2.0.1.5055</Version>
+    </PackageReference>
+    <PackageReference Include="DynamoVisualProgramming.ZeroTouchLibrary" IncludeAssets="build;compile" Condition="'$(Configuration)' == 'Debug-2.0' Or '$(Configuration)' == 'Release-2.0'">
+      <Version>2.0.1.5055</Version>
+    </PackageReference>
+    <!-- END MULTIVERSION REFERENCES -->
     <PackageReference Include="MaterialDesignColors">
       <Version>1.1.3</Version>
     </PackageReference>
@@ -186,15 +252,15 @@
     <GenerateResource UseSourcePath="true" Sources="$(ProjectDir)\SpeckleDynamoImages.resx" OutputResources="$(ProjectDir)\SpeckleDynamoImages.resources" References="$(FrameworkAssembliesPath)System.Drawing.dll" />
     <AL TargetType="library" EmbedResources="$(ProjectDir)\SpeckleDynamoImages.resources" OutputAssembly="$(OutDir)SpeckleDynamo.customization.dll" Version="%(AssemblyInfo.Version)" />
     <!-- If debugging, copy package to the Dynamo folder-->
-    <CallTarget Condition="'$(Configuration)' == 'Debug'" Targets="AfterBuildDebug" />
+    <CallTarget Condition="'$(Configuration)' == 'Debug'  Or '$(Configuration)' == 'Debug-1.3' Or '$(Configuration)' == 'Debug-2.0' " Targets="AfterBuildDebug" />
   </Target>
   <Target Name="AfterBuildDebug">
     <ItemGroup>
       <SourceDlls Include="$(TargetDir)*.*" />
       <SourcePkg Include="$(ProjectDir)pkg.json" />
     </ItemGroup>
-    <Copy SourceFiles="@(SourceDlls)" DestinationFolder="$(AppData)\Dynamo\Dynamo Core\1.3\packages\$(ProjectName)\bin\" />
-    <Copy SourceFiles="@(SourcePkg)" DestinationFolder="$(AppData)\Dynamo\Dynamo Core\1.3\packages\$(ProjectName)" />
+    <Copy SourceFiles="@(SourceDlls)" DestinationFolder="$(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(ProjectName)\bin\" />
+    <Copy SourceFiles="@(SourcePkg)" DestinationFolder="$(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(ProjectName)" />
     <!--<Copy SourceFiles="@(SourceDlls)" DestinationFolder="$(AppData)\Dynamo\Dynamo Revit\1.3\packages\$(ProjectName)\bin\" />
     <Copy SourceFiles="@(SourcePkg)" DestinationFolder="$(AppData)\Dynamo\Dynamo Revit\1.3\packages\$(ProjectName)" />-->
   </Target>
