@@ -96,18 +96,7 @@ namespace SpeckleDynamo
     {
       try
       {
-        // DataBridgeData = new List<object>();
-
         DataBridgeData = obj as ArrayList;
-
-        //for (var i = 0; i < inputs.Count; i++)
-        //{
-        //  if (!this.HasConnectedInput(i))
-        //    DataBridgeData.Add(new List<object>());
-        //  else
-        //    DataBridgeData.Add(inputs[i]);
-        //}
-
         UpdateData();
 
       }
@@ -121,6 +110,8 @@ namespace SpeckleDynamo
 
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
+      this.ClearRuntimeError();
+
       if (mySender == null || Log == null)
         return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
 
@@ -265,8 +256,8 @@ namespace SpeckleDynamo
         Message = "";
         return;
       }
-       
 
+      Message = "Initialising...";
       var myForm = new SpecklePopup.MainWindow();
       myForm.Owner = Application.Current.MainWindow;
       Application.Current.Dispatcher.BeginInvoke((Action)(() =>
@@ -284,8 +275,6 @@ namespace SpeckleDynamo
           RestApi = myForm.restApi;
           AuthToken = myForm.apitoken;
 
-          Message = "";
-
           InitializeSender(true);
         }
         else
@@ -301,7 +290,7 @@ namespace SpeckleDynamo
       if (init)
         mySender.IntializeSender(AuthToken, "none", "Dynamo", "none").ContinueWith(task =>
       {
-        ExpireNode();
+       // ExpireNode();
       });
 
 
@@ -310,6 +299,7 @@ namespace SpeckleDynamo
           StreamId = mySender.StreamId;
           //this.Locked = false;
           NickName = "Anonymous Stream";
+          ExpireNode();
           //Rhino.RhinoApp.MainApplicationWindow.Invoke(ExpireComponentAction);
         };
 

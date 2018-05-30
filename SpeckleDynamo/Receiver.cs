@@ -5,6 +5,7 @@ using SpeckleCore;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Collections;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -38,6 +39,7 @@ namespace SpeckleDynamo
     private string _oldStreamId;
     private string _message = "Initialising...";
     private bool _paused = false;
+    private bool _streamTextBoxEnabled = true;
     private bool _coldStart = false;
 
     private int elCount = 0;
@@ -56,6 +58,7 @@ namespace SpeckleDynamo
 
     public string Message { get => _message; set { _message = value; NotifyPropertyChanged("Message"); } }
     public bool Paused { get => _paused; set { _paused = value; NotifyPropertyChanged("Paused"); NotifyPropertyChanged("Receiving"); } }
+    public bool StreamTextBoxEnabled { get => _streamTextBoxEnabled; set { _streamTextBoxEnabled = value; NotifyPropertyChanged("StreamTextBoxEnabled");  } }
     //could instead use another value converter
     public bool Receiving { get => !_paused; }
     internal bool Expired = false;
@@ -81,12 +84,55 @@ namespace SpeckleDynamo
       _context = SynchronizationContext.Current;
     }
 
+    private void DataBridgeCallback(object obj)
+    {
+      try
+      {
+        //ID disconnected
+        if (!HasConnectedInput(0) && !StreamTextBoxEnabled && StreamId!=null)
+        {
+          StreamTextBoxEnabled = true;
+          StreamId = "";
+          ChangeStreams(StreamId);
+          return;
+        }
+        //ID connected
+        else if (HasConnectedInput(0) && obj!=null)
+        {
+          StreamTextBoxEnabled = false;
+          var newStreamID = (string)obj;
+          if (newStreamID != _oldStreamId)
+          {
+            StreamId = newStreamID;
+            ChangeStreams(StreamId);
+          }
+        }
+       
+       
+      }
+      catch (Exception ex)
+      {
+        throw new WarningException("Inputs are not formatted correctly");
+      }
+    }
+
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
-      if (!hasNewData || _registeringPorts)
+
+      if (_registeringPorts)
         return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
-      else
+      //probably means that the stream ID has changed
+      else if (!hasNewData)
       {
+
+        return new[] { AstFactory.BuildAssignment(
+                          AstFactory.BuildIdentifier(AstIdentifierBase + "_dummy"),
+                          VMDataBridge.DataBridge.GenerateBridgeDataAst(GUID.ToString(), inputAstNodes[0])) };
+      }
+      else 
+      {
+        Message = "Got data\n@" + DateTime.Now.ToString("HH:mm:ss");
+        hasNewData = false;
         if (Layers == null || ConvertedObjects.Count == 0)
           return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
 
@@ -154,6 +200,7 @@ namespace SpeckleDynamo
 
         return associativeNodes;
       }
+      
     }
 
     private void RecursivelyCreateNestedLists(List<object> tree, List<int> branchIndexes, int currentIndexPosition)
@@ -191,7 +238,6 @@ namespace SpeckleDynamo
 
     public virtual void UpdateGlobal()
     {
-
       var getStream = myReceiver.StreamGetAsync(myReceiver.StreamId, null);
       getStream.Wait();
 
@@ -226,7 +272,7 @@ namespace SpeckleDynamo
         this.Message = "Updating...";
 
 
-        Message = "Got data\n@" + DateTime.Now.ToString("HH:mm:ss");
+       
         //expire node on main thread
         hasNewData = true;
         _context.Post(ExpireNode, "");
@@ -329,7 +375,7 @@ namespace SpeckleDynamo
     {
       if (_coldStart)
       {
-        var coldStart = new System.Timers.Timer(1000) { AutoReset = false, Enabled = true };
+        var coldStart = new System.Timers.Timer(2000) { AutoReset = false, Enabled = true };
         coldStart.Elapsed += (sender, e) =>
         {
           OnNodeModified(true);
@@ -370,6 +416,13 @@ namespace SpeckleDynamo
 
     internal void Stream_LostFocus(object sender, RoutedEventArgs e)
     {
+      ChangeStreams(StreamId);
+    }
+
+    private void ChangeStreams(string StreamId)
+    {
+      this.ClearRuntimeError();
+
       if (StreamId == _oldStreamId)
         return;
       _oldStreamId = StreamId;
@@ -379,14 +432,29 @@ namespace SpeckleDynamo
       if (myReceiver != null)
         myReceiver.Dispose(true);
 
+      if(StreamId == "")
+      {
+        ResetReceiver();
+        return;
+      }
+
       myReceiver = new SpeckleApiClient(RestApi, true);
 
       InitReceiverEventsAndGlobals();
 
       //TODO: get documentname and guid, not sure how... Maybe with an extension?
       myReceiver.IntializeReceiver(StreamId, "none", "Dynamo", "none", AuthToken);
+    }
 
-
+    private void ResetReceiver()
+    {
+      Layers = new List<Layer>();
+      ObjectCache = new Dictionary<string, SpeckleObject>();
+      SpeckleObjects = new List<SpeckleObject>();
+      ConvertedObjects = new List<object>();
+      _context.Post(UpdateOutputStructure, "");
+      Message = "";
+      NickName = "Speckle Receiver";
     }
 
     internal void AddedToDocument(object sender, System.EventArgs e)
@@ -464,11 +532,19 @@ namespace SpeckleDynamo
       }
     }
 
+    protected override void OnBuilt()
+    {
+      base.OnBuilt();
+      VMDataBridge.DataBridge.Instance.RegisterCallback(GUID.ToString(), DataBridgeCallback);
+    }
+
     public override void Dispose()
     {
       if (myReceiver != null)
         myReceiver.Dispose();
       base.Dispose();
+
+      VMDataBridge.DataBridge.Instance.UnregisterCallback(GUID.ToString());
     }
 
     #region Serialization/Deserialization Methods
@@ -501,6 +577,7 @@ namespace SpeckleDynamo
           subNode.SetAttribute("email", Email);
           subNode.SetAttribute("server", Server);
           subNode.SetAttribute("paused", Paused.ToString());
+          subNode.SetAttribute("streamTextBoxEnabled", StreamTextBoxEnabled.ToString());
           element.AppendChild(subNode);
         }
       }
@@ -550,6 +627,9 @@ namespace SpeckleDynamo
               break;
             case "paused":
               Paused = bool.Parse(attr.Value);
+              break;
+            case "streamTextBoxEnabled":
+              StreamTextBoxEnabled = bool.Parse(attr.Value);
               break;
             default:
               Log(string.Format("{0} attribute could not be deserialized for {1}", attr.Name, GetType()));
