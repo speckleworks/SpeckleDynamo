@@ -98,6 +98,16 @@ namespace SpeckleDynamo
       return Point.ByCoordinates(arr[0], arr[1], arr[2]);
     }
 
+    public static double ToDegrees(this double radians)
+    {
+      return radians * (180 / Math.PI);
+    }
+
+    public static double ToRadians(this double degrees)
+    {
+      return degrees * (Math.PI / 180);
+    }
+
     public static bool IsLinear(this Curve curve)
     {
       //Dynamo cannot be trusted when less than 1e-6
@@ -294,9 +304,9 @@ namespace SpeckleDynamo
         SpeckleArc arc = new SpeckleArc(
                 Plane.ByOriginNormal(a.CenterPoint, a.Normal).ToSpeckle(),
                 a.Radius,
-                a.StartAngle,
-                a.StartAngle + a.SweepAngle,
-                a.SweepAngle
+                a.StartAngle.ToRadians(),
+                (a.StartAngle + a.SweepAngle).ToRadians(),
+                a.SweepAngle.ToRadians()
             );
         return arc;
     }
@@ -306,8 +316,8 @@ namespace SpeckleDynamo
         Arc arc = Arc.ByCenterPointRadiusAngle(
                 a.Plane.Origin.ToNative(),
                 a.Radius.Value,
-                a.StartAngle.Value,
-                a.EndAngle.Value,
+                a.StartAngle.Value.ToDegrees(),
+                a.EndAngle.Value.ToDegrees(),
                 a.Plane.Normal.ToNative()
         );
         return arc;
