@@ -1,12 +1,19 @@
-﻿using Dynamo.Graph.Nodes;
+﻿using Dynamo.Graph;
+using Dynamo.Graph.Nodes;
 using ProtoCore.AST.AssociativeAST;
-using System.Collections.Generic;
 using SpeckleCore;
-using System.Threading;
-using System.Linq;
 using System;
-using System.Windows;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
+using System.Threading;
+using System.Timers;
+using System.Windows;
+using System.Xml;
 
 namespace SpeckleDynamo
 {
@@ -31,6 +38,7 @@ namespace SpeckleDynamo
     private string _oldStreamId;
     private string _message = "Initialising...";
     private bool _paused = false;
+    private bool _coldStart = false;
 
     private int elCount = 0;
     private int subsetCount = 0;
@@ -79,7 +87,6 @@ namespace SpeckleDynamo
         return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
       else
       {
-        Message = "Data received\n@" + DateTime.Now.ToString("HH:mm:ss");
         if (Layers == null || ConvertedObjects.Count == 0)
           return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
 
@@ -218,14 +225,16 @@ namespace SpeckleDynamo
 
         this.Message = "Updating...";
 
-        _context.Post(UpdateOutputStructure, "");
-        Message = "Got data\n@" + DateTime.Now.ToString("hh:mm:ss");
+
+        Message = "Got data\n@" + DateTime.Now.ToString("HH:mm:ss");
         //expire node on main thread
         hasNewData = true;
         _context.Post(ExpireNode, "");
 
       });
     }
+
+
 
     public virtual void UpdateMeta()
     {
@@ -300,7 +309,6 @@ namespace SpeckleDynamo
       return layers;
     }
 
-
     private PortData getGhParameter(Layer param)
     {
       //guid stored in tooltip!
@@ -314,11 +322,21 @@ namespace SpeckleDynamo
     }
     private void ExpireNode(object o)
     {
+      UpdateOutputStructure();
       ExpireNode();
     }
     public void ExpireNode()
     {
-      OnNodeModified(true);
+      if (_coldStart)
+      {
+        var coldStart = new System.Timers.Timer(1000) { AutoReset = false, Enabled = true };
+        coldStart.Elapsed += (sender, e) =>
+        {
+          OnNodeModified(true);
+        };
+      }
+      else
+        OnNodeModified(true);
     }
 
     internal void InitReceiverEventsAndGlobals()
@@ -331,7 +349,12 @@ namespace SpeckleDynamo
 
       myReceiver.OnReady += (sender, e) =>
       {
-        UpdateGlobal();
+        //could be paused if saved receiver
+        if (!Paused)
+        {
+          UpdateGlobal();
+        }
+          
       };
 
       myReceiver.OnWsMessage += OnWsMessage;
@@ -366,8 +389,15 @@ namespace SpeckleDynamo
 
     }
 
-    internal void PromptAccountSelection(object sender, System.EventArgs e)
+    internal void AddedToDocument(object sender, System.EventArgs e)
     {
+      //saved receiver
+      if (myReceiver != null)
+      {
+        Message = "";
+        return;
+      }
+
       var myForm = new SpecklePopup.MainWindow();
       myForm.Owner = Application.Current.MainWindow;
       Application.Current.Dispatcher.BeginInvoke((Action)(() =>
@@ -391,8 +421,6 @@ namespace SpeckleDynamo
           return;
         }
       }));
-
-
     }
 
     internal void PausePlayButtonClick(object sender, RoutedEventArgs e)
@@ -442,6 +470,98 @@ namespace SpeckleDynamo
         myReceiver.Dispose();
       base.Dispose();
     }
+
+    #region Serialization/Deserialization Methods
+
+    protected override void SerializeCore(XmlElement element, SaveContext context)
+    {
+      base.SerializeCore(element, context); // Base implementation must be called.
+      if (myReceiver == null)
+        return;
+
+      //https://stackoverflow.com/questions/13674395/no-map-for-object-error-when-deserializing-object
+      using (var input = new MemoryStream())
+      {
+        var formatter = new BinaryFormatter();
+        formatter.Serialize(input, myReceiver);
+        input.Seek(0, SeekOrigin.Begin);
+
+        using (MemoryStream output = new MemoryStream())
+        using (DeflateStream deflateStream = new DeflateStream(output, CompressionMode.Compress))
+        {
+          input.CopyTo(deflateStream);
+          deflateStream.Close();
+
+          var client = Convert.ToBase64String(output.ToArray());
+
+          var xmlDocument = element.OwnerDocument;
+          var subNode = xmlDocument.CreateElement("Speckle");
+          subNode.SetAttribute("speckleclient", client);
+          //could be part of the sender
+          subNode.SetAttribute("email", Email);
+          subNode.SetAttribute("server", Server);
+          subNode.SetAttribute("paused", Paused.ToString());
+          element.AppendChild(subNode);
+        }
+      }
+    }
+
+    protected override void DeserializeCore(XmlElement element, SaveContext context)
+    {
+      base.DeserializeCore(element, context); //Base implementation must be called.
+
+      foreach (XmlNode subNode in element.ChildNodes)
+      {
+        if (!subNode.Name.Equals("Speckle"))
+          continue;
+        if (subNode.Attributes == null || (subNode.Attributes.Count <= 0))
+          continue;
+
+        _coldStart = true;
+        foreach (XmlAttribute attr in subNode.Attributes)
+        {
+          switch (attr.Name)
+          {
+            case "speckleclient":
+              using (MemoryStream input = new MemoryStream(Convert.FromBase64String(attr.Value)))
+              using (DeflateStream deflateStream = new DeflateStream(input, CompressionMode.Decompress))
+              using (MemoryStream output = new MemoryStream())
+              {
+                deflateStream.CopyTo(output);
+                deflateStream.Close();
+                output.Seek(0, SeekOrigin.Begin);
+
+                BinaryFormatter bformatter = new BinaryFormatter();
+                myReceiver = (SpeckleApiClient)bformatter.Deserialize(output);
+                RestApi = myReceiver.BaseUrl;
+                StreamId = myReceiver.StreamId;
+                AuthToken = myReceiver.AuthToken;
+
+                InitReceiverEventsAndGlobals();
+       
+
+              }
+              break;
+            case "email":
+              Email = attr.Value;
+              break;
+            case "server":
+              Server = attr.Value;
+              break;
+            case "paused":
+              Paused = bool.Parse(attr.Value);
+              break;
+            default:
+              Log(string.Format("{0} attribute could not be deserialized for {1}", attr.Name, GetType()));
+              break;
+          }
+        }
+
+        break;
+      }
+    }
+
+    #endregion
 
     public event PropertyChangedEventHandler PropertyChanged;
     private void NotifyPropertyChanged(String info)

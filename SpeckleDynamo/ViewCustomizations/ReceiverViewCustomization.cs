@@ -16,7 +16,7 @@ namespace SpeckleDynamo.ViewCustomizations
 
       //bindings
       ui.DataContext = _receiver;
-      ui.Loaded += _receiver.PromptAccountSelection;
+      ui.Loaded += _receiver.AddedToDocument;
       ui.PausePlayButton.Click += _receiver.PausePlayButtonClick;
       ui.Stream.LostFocus += _receiver.Stream_LostFocus;
       nodeView.inputGrid.Children.Add(ui);
@@ -26,10 +26,10 @@ namespace SpeckleDynamo.ViewCustomizations
     {
     }
 
-    private void ExpireNode(object sender, System.EventArgs e)
-    {
-      _receiver.ExpireNode();
-    }
+    //private void ExpireNode(object sender, System.EventArgs e)
+    //{
+    //  _receiver.ExpireNode();
+    //}
 
    
 

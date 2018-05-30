@@ -21,7 +21,7 @@ namespace SpeckleDynamo
 
       //bindings
       ui.DataContext = _sender;
-      ui.Loaded += _sender.PromptAccountSelection;
+      ui.Loaded += _sender.AddedToDocument;
       ui.ForceSend.Click += _sender.ForceSendClick;
 
       //add remove input buttons

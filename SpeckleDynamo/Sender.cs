@@ -1,15 +1,23 @@
-﻿using Dynamo.Graph.Nodes;
+﻿using Dynamo.Graph;
 using Dynamo.Graph.Connectors;
+using Dynamo.Graph.Nodes;
 using ProtoCore.AST.AssociativeAST;
+using SpeckleCore;
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using SpeckleCore;
-using System.Linq;
-using System;
-using System.Windows;
 using System.ComponentModel;
-using System.Timers;
+using System.Globalization;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
+using System.Timers;
+using System.Windows;
+using System.Xml;
+
+
 
 namespace SpeckleDynamo
 {
@@ -113,7 +121,7 @@ namespace SpeckleDynamo
 
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
-      if (mySender == null)
+      if (mySender == null || Log == null)
         return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
 
       var associativeNodes = new List<AssociativeNode> {
@@ -223,7 +231,7 @@ namespace SpeckleDynamo
           }
         }
       }
-      catch(Exception e)
+      catch (Exception e)
       {
         throw e;
       }
@@ -237,9 +245,9 @@ namespace SpeckleDynamo
           RecursivelyFlattenData(list[i] as ArrayList, flattenedList);
         else
         {
-            flattenedList.Add(list[i]);
+          flattenedList.Add(list[i]);
         }
-         
+
       }
     }
 
@@ -248,8 +256,17 @@ namespace SpeckleDynamo
       ExpireNode();
     }
 
-    internal void PromptAccountSelection(object sender, System.EventArgs e)
+    internal void AddedToDocument(object sender, System.EventArgs e)
     {
+      //saved sender
+      if (mySender != null)
+      {
+        InitializeSender(false);
+        Message = "";
+        return;
+      }
+       
+
       var myForm = new SpecklePopup.MainWindow();
       myForm.Owner = Application.Current.MainWindow;
       Application.Current.Dispatcher.BeginInvoke((Action)(() =>
@@ -269,7 +286,7 @@ namespace SpeckleDynamo
 
           Message = "";
 
-          InitializeSender();
+          InitializeSender(true);
         }
         else
         {
@@ -279,9 +296,10 @@ namespace SpeckleDynamo
       }));
     }
 
-    private void InitializeSender()
+    private void InitializeSender(bool init)
     {
-      mySender.IntializeSender(AuthToken, "none", "Dynamo", "none").ContinueWith(task =>
+      if (init)
+        mySender.IntializeSender(AuthToken, "none", "Dynamo", "none").ContinueWith(task =>
       {
         ExpireNode();
       });
@@ -305,6 +323,8 @@ namespace SpeckleDynamo
       mySender.OnError += (sender, e) =>
       {
         this.Log += DateTime.Now.ToString("dd:HH:mm:ss ") + e.EventData + "\n";
+        if (e.EventName == "websocket-disconnected")
+          return;
         throw new WarningException(e.EventName + ": " + e.EventData);
       };
       //TODO: check this
@@ -474,7 +494,9 @@ namespace SpeckleDynamo
       base.AddInput();
       InPortData.Last().NickName = string.Join("", GetSequence().ElementAt(InPorts.Count));
       InPortData.Last().ToolTipString = Guid.NewGuid().ToString();
-      UpdateMetadata();
+      //send new port and its data too otherwise could have a mismatch
+      if (DataSender!=null)
+        ExpireNode();
     }
 
     protected override void RemoveInput()
@@ -482,7 +504,9 @@ namespace SpeckleDynamo
       _updatingPorts = 3;
       if (InPorts.Count > 1)
         base.RemoveInput();
-      UpdateMetadata();
+
+      if (DataSender != null)
+        ExpireNode();
     }
 
     public override bool IsConvertible
@@ -508,6 +532,89 @@ namespace SpeckleDynamo
       base.Dispose();
       /// Unregister the data bridge callback.
       VMDataBridge.DataBridge.Instance.UnregisterCallback(GUID.ToString());
+    }
+
+    #endregion
+
+    #region Serialization/Deserialization Methods
+
+    protected override void SerializeCore(XmlElement element, SaveContext context)
+    {
+      base.SerializeCore(element, context); // Base implementation must be called.
+      if (mySender == null)
+        return;
+
+      //https://stackoverflow.com/questions/13674395/no-map-for-object-error-when-deserializing-object
+      using (var input = new MemoryStream())
+      {
+        var formatter = new BinaryFormatter();
+        formatter.Serialize(input, mySender);
+        input.Seek(0, SeekOrigin.Begin);
+
+        using (MemoryStream output = new MemoryStream())
+        using (DeflateStream deflateStream = new DeflateStream(output, CompressionMode.Compress))
+        {
+          input.CopyTo(deflateStream);
+          deflateStream.Close();
+
+          var client = Convert.ToBase64String(output.ToArray());
+
+          var xmlDocument = element.OwnerDocument;
+          var subNode = xmlDocument.CreateElement("Speckle");
+          subNode.SetAttribute("speckleclient", client);
+          //could be part of the sender
+          subNode.SetAttribute("email", Email);
+          subNode.SetAttribute("server", Server);
+          element.AppendChild(subNode);
+        }
+      }
+    }
+
+    protected override void DeserializeCore(XmlElement element, SaveContext context)
+    {
+      base.DeserializeCore(element, context); //Base implementation must be called.
+
+      foreach (XmlNode subNode in element.ChildNodes)
+      {
+        if (!subNode.Name.Equals("Speckle"))
+          continue;
+        if (subNode.Attributes == null || (subNode.Attributes.Count <= 0))
+          continue;
+
+        foreach (XmlAttribute attr in subNode.Attributes)
+        {
+          switch (attr.Name)
+          {
+            case "speckleclient":
+              using (MemoryStream input = new MemoryStream(Convert.FromBase64String(attr.Value)))
+              using (DeflateStream deflateStream = new DeflateStream(input, CompressionMode.Decompress))
+              using (MemoryStream output = new MemoryStream())
+              {
+                deflateStream.CopyTo(output);
+                deflateStream.Close();
+                output.Seek(0, SeekOrigin.Begin);
+
+                BinaryFormatter bformatter = new BinaryFormatter();
+                mySender = (SpeckleApiClient)bformatter.Deserialize(output);
+                RestApi = mySender.BaseUrl;
+                StreamId = mySender.StreamId;
+                _updatingPorts = 0;
+              }
+              break;
+            case "email":
+              Email = attr.Value;
+              break;
+            case "server":
+              Server = attr.Value;
+              break;
+            default:
+              Log(string.Format("{0} attribute could not be deserialized for {1}", attr.Name, GetType()));
+              break;
+          }
+        }
+
+        break;
+      }
     }
 
     #endregion
