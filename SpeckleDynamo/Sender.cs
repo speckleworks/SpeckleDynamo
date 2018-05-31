@@ -279,7 +279,7 @@ namespace SpeckleDynamo
       Application.Current.Dispatcher.BeginInvoke((Action)(() =>
       {
         //if default account exists form is closed automatically
-        if (myForm.IsActive)
+        if (!myForm.HasDefaultAccount)
           myForm.ShowDialog();
         if (myForm.restApi != null && myForm.apitoken != null)
         {

@@ -12,6 +12,7 @@ namespace SpecklePopup
 
     public string selectedEmail;
     public string selectedServer;
+    public bool HasDefaultAccount = false;
 
 
     public MainWindow(bool isPopup = true)
@@ -21,12 +22,14 @@ namespace SpecklePopup
       //only visible in popupmode
       if (isPopup)
       {
-        AccountsControl.ButonUseSelected.Click += ButonUseSelected_Click;
+        AccountsControl.ButonUseSelected.Visibility = Visibility.Visible;
+        AccountsControl.ButonUseSelected.Click += ButtonUseSelected_Click;
 
         //skip popup if there's a default account!
         if (AccountsControl.accounts.Any(x => x.isDefault))
         {
           UseSelected(AccountsControl.accounts.First(x => x.isDefault));
+          HasDefaultAccount = true;
         }
       }
       else
@@ -56,7 +59,7 @@ namespace SpecklePopup
       this.Close();
     }
 
-    private void ButonUseSelected_Click(object sender, RoutedEventArgs e)
+    private void ButtonUseSelected_Click(object sender, RoutedEventArgs e)
     {
       if (!(AccountsControl.AccountListBox.SelectedIndex != -1))
       {
