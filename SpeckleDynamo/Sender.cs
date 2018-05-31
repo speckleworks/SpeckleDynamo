@@ -1,14 +1,14 @@
 ﻿using Dynamo.Graph;
 using Dynamo.Graph.Connectors;
 using Dynamo.Graph.Nodes;
+using Newtonsoft.Json;
 using ProtoCore.AST.AssociativeAST;
 using SpeckleCore;
+using SpeckleDynamo.Utils;
 using System;
 using System.Collections;
-using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -17,24 +17,16 @@ using System.Text;
 using System.Timers;
 using System.Windows;
 using System.Xml;
-using SpeckleDynamo.Utils;
 
 namespace SpeckleDynamo
 {
   [NodeName("Speckle Sender")]
   [NodeDescription("Sends data to Speckle.")]
-  [NodeCategory("Speckle.IO")]
-
-  //Outputs
-  //[OutPortNames("Log", "ID")]
-  //[OutPortDescriptions("Log Data", "Stream ID")]
-  //[OutPortTypes("string", "string")]
-
+  [NodeCategory("Speckle")]
+  [NodeSearchTags("SpeckleSender")]
   [IsDesignScriptCompatible]
   public class Sender : VariableInputNode, INotifyPropertyChanged
   {
-
-
     private string _authToken;
     private string _restApi;
     private string _email;
@@ -42,15 +34,12 @@ namespace SpeckleDynamo
     private string _streamId;
     private string _message = "Initialising...";
 
-
-
     internal string AuthToken { get => _authToken; set { _authToken = value; NotifyPropertyChanged("AuthToken"); } }
     public string RestApi { get => _restApi; set { _restApi = value; NotifyPropertyChanged("RestApi"); } }
     public string Email { get => _email; set { _email = value; NotifyPropertyChanged("Email"); } }
     public string Server { get => _server; set { _server = value; NotifyPropertyChanged("Server"); } }
     public string StreamId { get => _streamId; set { _streamId = value; NotifyPropertyChanged("StreamId"); } }
     public string Message { get => _message; set { _message = value; NotifyPropertyChanged("Message"); } }
-
 
     public SpeckleApiClient mySender;
     internal string Log { get; set; }
@@ -62,42 +51,45 @@ namespace SpeckleDynamo
     private ArrayList DataBridgeData = new ArrayList();
 
     //The node is expired 3 times when a port is added/removed!!!
-    private int _updatingPorts = 0;
+    //private int _updatingPorts = 0;
     private bool _registeringPorts = false;
 
     private List<int> branchIndexes = new List<int>();
     private Dictionary<string, int> branches = new Dictionary<string, int>();
-    private int elemCount = 0;
 
     private ObservableCollectionEx<InputName> _inputs = new ObservableCollectionEx<InputName> { new InputName("A"), new InputName("B"), new InputName("C") };
-    public ObservableCollectionEx<InputName> Inputs {
+    public ObservableCollectionEx<InputName> Inputs
+    {
       get => _inputs;
-      set {
+      set
+      {
 
         _inputs = value;
-        NotifyPropertyChanged("Inputs"); } }
+        NotifyPropertyChanged("Inputs");
+      }
+    }
 
+    [JsonConstructor]
+    private Sender(IEnumerable<PortModel> inPorts, IEnumerable<PortModel> outPorts) : base(inPorts, outPorts)
+    {
+      ArgumentLacing = LacingStrategy.Disabled;
+    }
 
     public Sender()
     {
       var hack = new ConverterHack();
-      
-      //needs to be done here otherwise outports are wiped out upon adding /removing input ports, not sure why
-      OutPortData.Add(new PortData("Log", "Log Data"));
-      OutPortData.Add(new PortData("ID", "Stream ID"));
-      InPortData.Add(new PortData("A", Guid.NewGuid().ToString()));
-      InPortData.Add(new PortData("B", Guid.NewGuid().ToString()));
-      InPortData.Add(new PortData("C", Guid.NewGuid().ToString()));
+      OutPorts.Add(new PortModel(PortType.Output, this, new PortData("Log", "Log Data")));
+      OutPorts.Add(new PortModel(PortType.Output, this, new PortData("ID", "Stream ID")));
+      InPorts.Add(new PortModel(PortType.Input, this, new PortData("A", "")));
+      InPorts.Add(new PortModel(PortType.Input, this, new PortData("B", "")));
+      InPorts.Add(new PortModel(PortType.Input, this, new PortData("C", "")));
+
       RegisterAllPorts();
 
       Inputs.CollectionChanged += Inputs_CollectionChanged;
-      //PropertyChanged += SendData_PropertyChanged;
+
       ArgumentLacing = LacingStrategy.Disabled;
     }
-
-
-
-
 
     /// <summary>
     /// Callback method for DataBridge mechanism.
@@ -123,7 +115,7 @@ namespace SpeckleDynamo
 
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
-      this.ClearRuntimeError();
+      //this.ClearRuntimeError();
 
       if (_registeringPorts)
         return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
@@ -136,13 +128,13 @@ namespace SpeckleDynamo
                      AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(1), AstFactory.BuildStringNode(mySender.StreamId)) };
 
       //if node expired just because a port was added/removed don't bother updating global
-      if (_updatingPorts > 0)
-      {
-        _updatingPorts--;
-        return associativeNodes;
-      }
+      //if (_updatingPorts > 0)
+      //{
+      //  _updatingPorts--;
+      //  return associativeNodes;
+      //}
 
-      if (InPortData.Count == 0)
+      if (InPorts.Count == 0)
         return associativeNodes;
 
       //using BridgeData to get value of input from within the node itself
@@ -155,7 +147,7 @@ namespace SpeckleDynamo
 
     public void UpdateData()
     {
-      BucketName = this.NickName;
+      BucketName = this.Name;
       BucketLayers = this.GetLayers();
 
       BucketObjects = new List<object>();
@@ -172,7 +164,7 @@ namespace SpeckleDynamo
       List<Layer> layers = new List<Layer>();
       int startIndex = 0;
       int orderIndex = 0;
-      foreach (var myParam in InPortData)
+      foreach (var myParam in InPorts)
       {
         var data = DataBridgeData.Count - 1 >= orderIndex ? DataBridgeData[orderIndex] : null;
         GetTopology(data);
@@ -182,8 +174,8 @@ namespace SpeckleDynamo
 
 
         Layer myLayer = new Layer(
-            myParam.NickName,
-            myParam.ToolTipString,
+            myParam.Name,
+            myParam.GUID.ToString(),
             topo,
             count,
             startIndex,
@@ -200,7 +192,6 @@ namespace SpeckleDynamo
     {
       branches = new Dictionary<string, int>();
       branchIndexes = new List<int>();
-      elemCount = 0;
 
       //recursion takes an ArrayList
       if (data is ArrayList)
@@ -295,7 +286,8 @@ namespace SpeckleDynamo
         }
         else
         {
-          Message = "Account selection failed.";
+          throw new WarningException("Account selection failed.");
+          Message = "";
           return;
         }
       }));
@@ -306,7 +298,7 @@ namespace SpeckleDynamo
       if (init)
         mySender.IntializeSender(AuthToken, "none", "Dynamo", "none").ContinueWith(task =>
       {
-       // ExpireNode();
+        // ExpireNode();
       });
 
 
@@ -314,7 +306,7 @@ namespace SpeckleDynamo
         {
           StreamId = mySender.StreamId;
           //this.Locked = false;
-          NickName = "Anonymous Stream";
+          Name = "Anonymous Stream";
           ExpireNode();
           //Rhino.RhinoApp.MainApplicationWindow.Invoke(ExpireComponentAction);
         };
@@ -451,7 +443,7 @@ namespace SpeckleDynamo
 
     public void UpdateMetadata()
     {
-      BucketName = this.NickName;
+      BucketName = this.Name;
       BucketLayers = this.GetLayers();
       MetadataSender.Start();
     }
@@ -497,44 +489,56 @@ namespace SpeckleDynamo
 
     private void Inputs_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {
-      if(Inputs.Count==InPortData.Count && string.Join(".", Inputs.Select(x => x.Name)) != string.Join(".", InPortData.Select(x => x.NickName)))
+      if (Inputs.Count == InPorts.Count && string.Join(".", Inputs.Select(x => x.Name)) != string.Join(".", InPorts.Select(x => x.Name)))
       {
-        for (var i = 0; i < Inputs.Count; i++)
+        _registeringPorts = true;
+        //collect connections
+        List<List<PortModel>> startPorts = new List<List<PortModel>>();
+        foreach(var i in InPorts)
         {
-          InPortData[i].NickName = Inputs[i].Name;
+          startPorts.Add(new List<PortModel>());
+          foreach(var c in i.Connectors)
+            startPorts.Last().Add(c.Start);
         }
 
-        UpdateMetadata();
-        _registeringPorts = true;
+        //remove all old ports
+        for (var i = InPorts.Count-1; i >= 0; i--)
+          InPorts.RemoveAt(i);
+
+        //add new ports and old connections
+        for (var i = 0; i < Inputs.Count; i++)
+        {
+          InPorts.Add(new PortModel(PortType.Input, this, new PortData(Inputs[i].Name, "")));
+          foreach (var s in startPorts[i])
+            InPorts.Last().Connectors.Add(new ConnectorModel(s,InPorts.Last(),Guid.NewGuid()));
+        }       
         RegisterAllPorts();
         _registeringPorts = false;
+        //since I cannot name ports the node needs to be expired
+        ExpireNode();
       }
-     
+
     }
 
     protected override void AddInput()
     {
-      _updatingPorts = 3;
-      base.AddInput();
-      InPortData.Last().NickName = string.Join("", GetSequence().ElementAt(InPorts.Count));
-      InPortData.Last().ToolTipString = Guid.NewGuid().ToString();
-      Inputs.Add(new InputName(InPortData.Last().NickName));
+      //_updatingPorts = 3;
+      InPorts.Add(new PortModel(PortType.Input, this, new PortData(GetSequence().ElementAt(InPorts.Count), "")));
+      Inputs.Add(new InputName(InPorts.Last().Name));
+      //base.AddInput();
 
-     
-      //send new port and its data too otherwise could have a mismatch
-      if (DataSender!=null)
+      if (DataSender != null)
         ExpireNode();
     }
 
     protected override void RemoveInput()
     {
-      _updatingPorts = 3;
+      //_updatingPorts = 3;
       if (InPorts.Count > 1)
       {
         base.RemoveInput();
         Inputs.RemoveAt(Inputs.Count - 1);
       }
-       
 
       if (DataSender != null)
         ExpireNode();
@@ -629,7 +633,7 @@ namespace SpeckleDynamo
                 mySender = (SpeckleApiClient)bformatter.Deserialize(output);
                 RestApi = mySender.BaseUrl;
                 StreamId = mySender.StreamId;
-                _updatingPorts = 0;
+                //_updatingPorts = 0;
               }
               break;
             case "email":
@@ -687,8 +691,8 @@ namespace SpeckleDynamo
   {
     private string _name { get; set; }
     public string Name { get => _name; set { _name = value; NotifyPropertyChanged("Name"); } }
-   
-    public InputName (string name)
+
+    public InputName(string name)
     {
       Name = name;
     }

@@ -5,7 +5,7 @@ using SpeckleCore;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Collections;
+using Newtonsoft.Json;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -16,12 +16,17 @@ using System.Timers;
 using System.Windows;
 using System.Xml;
 
+
+
+using Dynamo.Utilities;
+
+
 namespace SpeckleDynamo
 {
 
   [NodeName("Speckle Receiver")]
   [NodeDescription("Receives data from Speckle.")]
-  [NodeCategory("Speckle.IO")]
+  [NodeCategory("Speckle")]
 
   //Inputs
   [InPortNames("ID")]
@@ -74,6 +79,11 @@ namespace SpeckleDynamo
 
     private Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
 
+    [JsonConstructor]
+    private Receiver(IEnumerable<PortModel> inPorts, IEnumerable<PortModel> outPorts) : base(inPorts, outPorts)
+    {
+    }
+
     public Receiver()
     {
       var hack = new ConverterHack();
@@ -88,8 +98,9 @@ namespace SpeckleDynamo
     {
       try
       {
+
         //ID disconnected
-        if (!HasConnectedInput(0) && !StreamTextBoxEnabled && StreamId!=null)
+        if (!InPorts[0].Connectors.Any() && !StreamTextBoxEnabled && StreamId!=null)
         {
           StreamTextBoxEnabled = true;
           StreamId = "";
@@ -97,7 +108,7 @@ namespace SpeckleDynamo
           return;
         }
         //ID connected
-        else if (HasConnectedInput(0) && obj!=null)
+        else if (InPorts[0].Connectors.Any() && obj!=null)
         {
           StreamTextBoxEnabled = false;
           var newStreamID = (string)obj;
@@ -241,7 +252,7 @@ namespace SpeckleDynamo
       var getStream = myReceiver.StreamGetAsync(myReceiver.StreamId, null);
       getStream.Wait();
 
-      NickName = getStream.Result.Resource.Name;
+      this.Name = getStream.Result.Resource.Name;
       Layers = getStream.Result.Resource.Layers.ToList();
 
       // TODO: check statement below with dimitrie
@@ -286,7 +297,7 @@ namespace SpeckleDynamo
     {
       var result = myReceiver.StreamGetAsync(myReceiver.StreamId, "fields=name,layers").Result;
 
-      NickName = result.Resource.Name;
+      this.Name = result.Resource.Name;
       Layers = result.Resource.Layers.ToList();
       //run on main thread
       _context.Post(UpdateOutputStructure, "");
@@ -309,26 +320,32 @@ namespace SpeckleDynamo
 
       foreach (Layer layer in toRemove)
       {
-        var myparam = OutPortData.FirstOrDefault(item => { return item.NickName == layer.Name; });
+        var port = OutPorts.FirstOrDefault(item => { return item.Name == layer.Name; });
 
-        if (myparam != null)
-          OutPortData.Remove(myparam);
+        if (port != null)
+          OutPorts.Remove(port);
       }
 
       foreach (var layer in toAdd)
       {
-        OutPortData.Add(getGhParameter(layer));
+        OutPorts.Add(new PortModel(PortType.Output, this, new PortData(layer.Name, layer.Guid)));
       }
 
       foreach (var layer in toUpdate)
       {
-        var myparam = OutPortData.FirstOrDefault(item => { return item.ToolTipString == layer.Guid; });
-        myparam.NickName = layer.Name;
+        for (var i = 0; i < OutPorts.Count; i++)
+        {
+          if (OutPorts[i].ToolTip == layer.Guid)
+          {
+            OutPorts.RemoveAt(i);
+            OutPorts.Insert(i, new PortModel(PortType.Output, this, new PortData(layer.Name, layer.Guid)));
+            break;
+          }
+        }
       }
 
       _registeringPorts = true;
-      RegisterOutputPorts();
-      ValidateConnections();
+      RegisterAllPorts();
       _registeringPorts = false;
     }
 
@@ -337,12 +354,12 @@ namespace SpeckleDynamo
       List<Layer> layers = new List<Layer>();
       int startIndex = 0;
       int count = 0;
-      foreach (var myParam in OutPortData)
+      foreach (var port in OutPorts)
       {
-        // NOTE: For gh receivers, we store the original guid of the sender component layer inside the parametr name.
+        // NOTE: For receivers, we store the original guid of the sender component layer inside the tooltip
         Layer myLayer = new Layer(
-            myParam.NickName,
-            myParam.ToolTipString,
+            port.Name,
+            port.ToolTip,
             "",  //todo: check this
             0, //todo: check this
             startIndex,
@@ -353,13 +370,6 @@ namespace SpeckleDynamo
         count++;
       }
       return layers;
-    }
-
-    private PortData getGhParameter(Layer param)
-    {
-      //guid stored in tooltip!
-      PortData newParam = new PortData(param.Name, param.Guid);
-      return newParam;
     }
 
     public void UpdateOutputStructure(object o)
@@ -421,7 +431,7 @@ namespace SpeckleDynamo
 
     private void ChangeStreams(string StreamId)
     {
-      this.ClearRuntimeError();
+      //this.ClearRuntimeError();
 
       if (StreamId == _oldStreamId)
         return;
@@ -452,9 +462,15 @@ namespace SpeckleDynamo
       ObjectCache = new Dictionary<string, SpeckleObject>();
       SpeckleObjects = new List<SpeckleObject>();
       ConvertedObjects = new List<object>();
+      //remove all old ports
       _context.Post(UpdateOutputStructure, "");
+      //for (var i = OutPorts.Count - 1; i >= 0; i--)
+      //  OutPorts.RemoveAt(i);
+      //_registeringPorts = true;
+      //RegisterAllPorts();
+      //_registeringPorts = false;
       Message = "";
-      NickName = "Speckle Receiver";
+      Name = "Speckle Receiver";
     }
 
     internal void AddedToDocument(object sender, System.EventArgs e)
@@ -485,7 +501,8 @@ namespace SpeckleDynamo
         }
         else
         {
-          Message = "Account selection failed.";
+          throw new WarningException("Account selection failed.");
+          Message = "";
           return;
         }
       }));
