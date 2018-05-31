@@ -48,7 +48,7 @@ namespace SpeckleDynamo
 
     private bool _registeringPorts = false;
 
-    public string AuthToken { get => _authToken; set { _authToken = value; NotifyPropertyChanged("AuthToken"); } }
+    internal string AuthToken { get => _authToken; set { _authToken = value; NotifyPropertyChanged("AuthToken"); } }
     public string RestApi { get => _restApi; set { _restApi = value; NotifyPropertyChanged("RestApi"); } }
     public string Email { get => _email; set { _email = value; NotifyPropertyChanged("Email"); } }
     public string Server { get => _server; set { _server = value; NotifyPropertyChanged("Server"); } }
@@ -60,7 +60,7 @@ namespace SpeckleDynamo
     public bool Paused { get => _paused; set { _paused = value; NotifyPropertyChanged("Paused"); NotifyPropertyChanged("Receiving"); } }
     public bool StreamTextBoxEnabled { get => _streamTextBoxEnabled; set { _streamTextBoxEnabled = value; NotifyPropertyChanged("StreamTextBoxEnabled");  } }
     //could instead use another value converter
-    public bool Receiving { get => !_paused; }
+    internal bool Receiving { get => !_paused; }
     internal bool Expired = false;
 
     internal SpeckleApiClient myReceiver;

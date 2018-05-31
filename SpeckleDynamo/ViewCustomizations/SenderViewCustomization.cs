@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Windows;
 using SpeckleDynamo.UserControls;
 using SpecklePopup;
+using System.Windows.Controls;
 
 namespace SpeckleDynamo
 {
@@ -31,8 +32,14 @@ namespace SpeckleDynamo
       ui.DynamoButtons.Children.Add(subButton);
 
       nodeView.inputGrid.Children.Add(ui);
+      nodeView.grid.ContextMenu.Items.Add(new Separator());
+      var mi = new MenuItem { Header = "Rename Inputs..." };
+      var inputs = new ContextMenuItem();
+      inputs.DataContext = _sender;
+      mi.Items.Add(inputs);
+      nodeView.grid.ContextMenu.Items.Add(mi);
 
-//wModel.InPorts.
+      //wModel.InPorts.
 
     }
 

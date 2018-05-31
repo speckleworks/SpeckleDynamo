@@ -108,9 +108,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Receiver.cs" />
+    <Compile Include="UserControls\ContextMenuItem.xaml.cs">
+      <DependentUpon>ContextMenuItem.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UserControls\SenderUi.xaml.cs">
       <DependentUpon>SenderUi.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Utils\ObservableCollectionEx.cs" />
     <Compile Include="ViewCustomizations\ReceiverViewCustomization.cs" />
     <Compile Include="Sender.cs" />
     <Compile Include="ViewCustomizations\SenderViewCustomization.cs" />
@@ -199,6 +203,10 @@
   </ItemGroup>
   <ItemGroup>
     <Page Include="Resources.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UserControls\ContextMenuItem.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

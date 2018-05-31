@@ -5,6 +5,7 @@ using ProtoCore.AST.AssociativeAST;
 using SpeckleCore;
 using System;
 using System.Collections;
+using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
@@ -16,8 +17,7 @@ using System.Text;
 using System.Timers;
 using System.Windows;
 using System.Xml;
-
-
+using SpeckleDynamo.Utils;
 
 namespace SpeckleDynamo
 {
@@ -44,7 +44,7 @@ namespace SpeckleDynamo
 
 
 
-    public string AuthToken { get => _authToken; set { _authToken = value; NotifyPropertyChanged("AuthToken"); } }
+    internal string AuthToken { get => _authToken; set { _authToken = value; NotifyPropertyChanged("AuthToken"); } }
     public string RestApi { get => _restApi; set { _restApi = value; NotifyPropertyChanged("RestApi"); } }
     public string Email { get => _email; set { _email = value; NotifyPropertyChanged("Email"); } }
     public string Server { get => _server; set { _server = value; NotifyPropertyChanged("Server"); } }
@@ -53,26 +53,35 @@ namespace SpeckleDynamo
 
 
     public SpeckleApiClient mySender;
-    public string Log { get; set; }
+    internal string Log { get; set; }
     System.Timers.Timer MetadataSender, DataSender;
     private string BucketName;
     private List<Layer> BucketLayers = new List<Layer>();
     private List<object> BucketObjects = new List<object>();
-    public Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
+    internal Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
     private ArrayList DataBridgeData = new ArrayList();
 
     //The node is expired 3 times when a port is added/removed!!!
     private int _updatingPorts = 0;
+    private bool _registeringPorts = false;
 
     private List<int> branchIndexes = new List<int>();
     private Dictionary<string, int> branches = new Dictionary<string, int>();
     private int elemCount = 0;
 
+    private ObservableCollectionEx<InputName> _inputs = new ObservableCollectionEx<InputName> { new InputName("A"), new InputName("B"), new InputName("C") };
+    public ObservableCollectionEx<InputName> Inputs {
+      get => _inputs;
+      set {
+
+        _inputs = value;
+        NotifyPropertyChanged("Inputs"); } }
+
 
     public Sender()
     {
       var hack = new ConverterHack();
-
+      
       //needs to be done here otherwise outports are wiped out upon adding /removing input ports, not sure why
       OutPortData.Add(new PortData("Log", "Log Data"));
       OutPortData.Add(new PortData("ID", "Stream ID"));
@@ -80,9 +89,13 @@ namespace SpeckleDynamo
       InPortData.Add(new PortData("B", Guid.NewGuid().ToString()));
       InPortData.Add(new PortData("C", Guid.NewGuid().ToString()));
       RegisterAllPorts();
+
+      Inputs.CollectionChanged += Inputs_CollectionChanged;
       //PropertyChanged += SendData_PropertyChanged;
       ArgumentLacing = LacingStrategy.Disabled;
     }
+
+
 
 
 
@@ -111,6 +124,9 @@ namespace SpeckleDynamo
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
       this.ClearRuntimeError();
+
+      if (_registeringPorts)
+        return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
 
       if (mySender == null || Log == null)
         return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
@@ -478,12 +494,33 @@ namespace SpeckleDynamo
       return "Layer " + index.ToString();
     }
 
+
+    private void Inputs_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+      if(Inputs.Count==InPortData.Count && string.Join(".", Inputs.Select(x => x.Name)) != string.Join(".", InPortData.Select(x => x.NickName)))
+      {
+        for (var i = 0; i < Inputs.Count; i++)
+        {
+          InPortData[i].NickName = Inputs[i].Name;
+        }
+
+        UpdateMetadata();
+        _registeringPorts = true;
+        RegisterAllPorts();
+        _registeringPorts = false;
+      }
+     
+    }
+
     protected override void AddInput()
     {
       _updatingPorts = 3;
       base.AddInput();
       InPortData.Last().NickName = string.Join("", GetSequence().ElementAt(InPorts.Count));
       InPortData.Last().ToolTipString = Guid.NewGuid().ToString();
+      Inputs.Add(new InputName(InPortData.Last().NickName));
+
+     
       //send new port and its data too otherwise could have a mismatch
       if (DataSender!=null)
         ExpireNode();
@@ -493,7 +530,11 @@ namespace SpeckleDynamo
     {
       _updatingPorts = 3;
       if (InPorts.Count > 1)
+      {
         base.RemoveInput();
+        Inputs.RemoveAt(Inputs.Count - 1);
+      }
+       
 
       if (DataSender != null)
         ExpireNode();
@@ -640,5 +681,25 @@ namespace SpeckleDynamo
       }
     }
 
+  }
+
+  public class InputName : INotifyPropertyChanged
+  {
+    private string _name { get; set; }
+    public string Name { get => _name; set { _name = value; NotifyPropertyChanged("Name"); } }
+   
+    public InputName (string name)
+    {
+      Name = name;
+    }
+
+    public event PropertyChangedEventHandler PropertyChanged;
+    private void NotifyPropertyChanged(String info)
+    {
+      if (PropertyChanged != null)
+      {
+        PropertyChanged(this, new PropertyChangedEventArgs(info));
+      }
+    }
   }
 }
