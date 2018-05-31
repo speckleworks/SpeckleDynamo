@@ -138,6 +138,7 @@
   <ItemGroup>
     <Content Include="SpeckleDynamoExtension_ViewExtensionDefinition.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
     </Content>
   </ItemGroup>
   <ItemGroup>
@@ -155,10 +156,7 @@
   </Target>
   <PropertyGroup>
     <PostBuildEvent>
-      :: !!! run VS as administrator or these will fail !!!
-
-      ::xcopy /Y "$(TargetDir)*.*" "$(ProgramW6432)\Dynamo\Dynamo Core\$(DynamoVersion)\"
-      ::xcopy /Y "$(ProjectDir)*.xml" "$(ProgramW6432)\Dynamo\Dynamo Core\$(DynamoVersion)\viewExtensions\"</PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.

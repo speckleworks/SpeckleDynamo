@@ -1,4 +1,4 @@
 ﻿<ViewExtensionDefinition>
-  <AssemblyPath>..\SpeckleDynamoExtension.dll</AssemblyPath>
+  <AssemblyPath>..\bin\SpeckleDynamoExtension.dll</AssemblyPath>
   <TypeName>SpeckleDynamoExtension.SpeckleDynamoExtension</TypeName>
 </ViewExtensionDefinition>

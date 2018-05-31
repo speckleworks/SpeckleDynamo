@@ -268,11 +268,15 @@
   </Target>
   <Target Name="AfterBuildDebug">
     <ItemGroup>
-      <SourceDlls Include="$(TargetDir)*.*" />
+      <SourceDlls Include="$(TargetDir)*.dll" />
+      <SourcePdbs Include="$(TargetDir)*.pdb" />
       <SourcePkg Include="$(ProjectDir)pkg.json" />
+      <SourceExtension Include="$(TargetDir)$(ProjectName)Extension_ViewExtensionDefinition.xml" />
     </ItemGroup>
     <Copy SourceFiles="@(SourceDlls)" DestinationFolder="$(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(ProjectName)\bin\" />
+    <Copy SourceFiles="@(SourcePdbs)" DestinationFolder="$(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(ProjectName)\bin\" />
     <Copy SourceFiles="@(SourcePkg)" DestinationFolder="$(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(ProjectName)" />
+    <Copy SourceFiles="@(SourceExtension)" DestinationFolder="$(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(ProjectName)\extra" />
     <!--<Copy SourceFiles="@(SourceDlls)" DestinationFolder="$(AppData)\Dynamo\Dynamo Revit\1.3\packages\$(ProjectName)\bin\" />
     <Copy SourceFiles="@(SourcePkg)" DestinationFolder="$(AppData)\Dynamo\Dynamo Revit\1.3\packages\$(ProjectName)" />-->
   </Target>
