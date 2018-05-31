@@ -196,6 +196,10 @@
       <Project>{21dcbb4d-0b7e-415d-8cb3-3cdb0d28a187}</Project>
       <Name>SpeckleDynamoConverter</Name>
     </ProjectReference>
+    <ProjectReference Include="..\SpeckleDynamoExtension\SpeckleDynamoExtension.csproj">
+      <Project>{146ebf48-e7a0-4abe-809d-d7f3059e4ee1}</Project>
+      <Name>SpeckleDynamoExtension</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SpeckleDynamoFUnctions\SpeckleDynamoFunctions.csproj">
       <Project>{7d9a6b97-5773-44b1-8c04-367bff0f8599}</Project>
       <Name>SpeckleDynamoFunctions</Name>
