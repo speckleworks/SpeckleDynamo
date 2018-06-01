@@ -108,12 +108,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Receiver.cs" />
+    <Compile Include="Test.cs" />
+    <Compile Include="Serialization\SpeckleClientConverter.cs" />
     <Compile Include="UserControls\ContextMenuItem.xaml.cs">
       <DependentUpon>ContextMenuItem.xaml</DependentUpon>
     </Compile>
     <Compile Include="UserControls\SenderUi.xaml.cs">
       <DependentUpon>SenderUi.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Utils\Accounts.cs" />
     <Compile Include="Utils\ObservableCollectionEx.cs" />
     <Compile Include="ViewCustomizations\ReceiverViewCustomization.cs" />
     <Compile Include="Sender.cs" />

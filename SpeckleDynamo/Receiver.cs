@@ -1,25 +1,20 @@
 ﻿using Dynamo.Graph;
 using Dynamo.Graph.Nodes;
+using Dynamo.Utilities;
+using Newtonsoft.Json;
 using ProtoCore.AST.AssociativeAST;
 using SpeckleCore;
+using SpeckleDynamo.Serialization;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using Newtonsoft.Json;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
 using System.Threading;
-using System.Timers;
 using System.Windows;
 using System.Xml;
-
-
-
-using Dynamo.Utilities;
-
 
 namespace SpeckleDynamo
 {
@@ -41,47 +36,45 @@ namespace SpeckleDynamo
     private string _email;
     private string _server;
     private string _streamId;
-    private string _oldStreamId;
+    
     private string _message = "Initialising...";
     private bool _paused = false;
     private bool _streamTextBoxEnabled = true;
     private bool _coldStart = false;
-
     private int elCount = 0;
     private int subsetCount = 0;
     private List<object> subset = new List<object>();
-
-    private bool _registeringPorts = false;
-
+    private List<Layer> Layers = new List<Layer>();
+    private List<Layer> OldLayers = new List<Layer>();
+    private List<SpeckleObject> SpeckleObjects;
+    private List<object> ConvertedObjects;
+    private readonly SynchronizationContext _context;
+    private bool hasNewData = false;
+    private Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
+    internal bool Receiving { get => !_paused; } //could instead use another value converter
+    internal bool Expired = false;
     internal string AuthToken { get => _authToken; set { _authToken = value; NotifyPropertyChanged("AuthToken"); } }
+
+    #region public properties
     public string RestApi { get => _restApi; set { _restApi = value; NotifyPropertyChanged("RestApi"); } }
     public string Email { get => _email; set { _email = value; NotifyPropertyChanged("Email"); } }
     public string Server { get => _server; set { _server = value; NotifyPropertyChanged("Server"); } }
-    public string StreamId { get => _streamId; set
-      { _streamId = value; NotifyPropertyChanged("StreamId");
-      } }
-
+    public string StreamId { get => _streamId; set { _streamId = value; NotifyPropertyChanged("StreamId"); } }
+    public string OldStreamId;
+    [JsonIgnore]
     public string Message { get => _message; set { _message = value; NotifyPropertyChanged("Message"); } }
     public bool Paused { get => _paused; set { _paused = value; NotifyPropertyChanged("Paused"); NotifyPropertyChanged("Receiving"); } }
     public bool StreamTextBoxEnabled { get => _streamTextBoxEnabled; set { _streamTextBoxEnabled = value; NotifyPropertyChanged("StreamTextBoxEnabled");  } }
-    //could instead use another value converter
-    internal bool Receiving { get => !_paused; }
-    internal bool Expired = false;
+    [JsonConverter(typeof(SpeckleClientConverter))]
+    public SpeckleApiClient myReceiver;
+    #endregion
 
-    internal SpeckleApiClient myReceiver;
-    List<Layer> Layers;
-    List<SpeckleObject> SpeckleObjects;
-    List<object> ConvertedObjects;
-
-    private readonly SynchronizationContext _context;
-    private bool hasNewData = false;
-
-
-    private Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
 
     [JsonConstructor]
     private Receiver(IEnumerable<PortModel> inPorts, IEnumerable<PortModel> outPorts) : base(inPorts, outPorts)
     {
+      var hack = new ConverterHack();
+      _context = SynchronizationContext.Current;
     }
 
     public Receiver()
@@ -112,7 +105,7 @@ namespace SpeckleDynamo
         {
           StreamTextBoxEnabled = false;
           var newStreamID = (string)obj;
-          if (newStreamID != _oldStreamId)
+          if (newStreamID != OldStreamId)
           {
             StreamId = newStreamID;
             ChangeStreams(StreamId);
@@ -130,11 +123,8 @@ namespace SpeckleDynamo
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
       this.ClearErrorsAndWarnings();
-
-      if (_registeringPorts)
-        return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
       //probably means that the stream ID has changed
-      else if (!hasNewData)
+      if (!hasNewData)
       {
 
         return new[] { AstFactory.BuildAssignment(
@@ -317,7 +307,8 @@ namespace SpeckleDynamo
       toAdd = new List<Layer>();
       toUpdate = new List<Layer>();
 
-      Layer.DiffLayerLists(GetLayers(), Layers, ref toRemove, ref toAdd, ref toUpdate);
+      Layer.DiffLayerLists(OldLayers, Layers, ref toRemove, ref toAdd, ref toUpdate);
+      OldLayers = Layers;
 
       foreach (Layer layer in toRemove)
       {
@@ -345,32 +336,7 @@ namespace SpeckleDynamo
         }
       }
 
-      _registeringPorts = true;
       RegisterAllPorts();
-      _registeringPorts = false;
-    }
-
-    public List<Layer> GetLayers()
-    {
-      List<Layer> layers = new List<Layer>();
-      int startIndex = 0;
-      int count = 0;
-      foreach (var port in OutPorts)
-      {
-        // NOTE: For receivers, we store the original guid of the sender component layer inside the tooltip
-        Layer myLayer = new Layer(
-            port.Name,
-            port.ToolTip,
-            "",  //todo: check this
-            0, //todo: check this
-            startIndex,
-            count);
-
-        layers.Add(myLayer);
-        // startIndex += myParam.VolatileDataCount;
-        count++;
-      }
-      return layers;
     }
 
     public void UpdateOutputStructure(object o)
@@ -380,7 +346,12 @@ namespace SpeckleDynamo
     private void ExpireNode(object o)
     {
       UpdateOutputStructure();
-      ExpireNode();
+
+      var delay = new System.Timers.Timer(2000) { AutoReset = false, Enabled = true };
+      delay.Elapsed += (sender, e) =>
+      {
+        ExpireNode();
+      };
     }
     public void ExpireNode()
     {
@@ -434,9 +405,9 @@ namespace SpeckleDynamo
     {
       //this.ClearRuntimeError();
 
-      if (StreamId == _oldStreamId)
+      if (StreamId == OldStreamId)
         return;
-      _oldStreamId = StreamId;
+      OldStreamId = StreamId;
 
       Console.WriteLine("Changing streams...");
 
@@ -480,6 +451,8 @@ namespace SpeckleDynamo
       if (myReceiver != null)
       {
         Message = "";
+        AuthToken = Utils.Accounts.GetAuthToken(Email, RestApi);
+        InitReceiverEventsAndGlobals();
         return;
       }
 
@@ -565,6 +538,8 @@ namespace SpeckleDynamo
       VMDataBridge.DataBridge.Instance.UnregisterCallback(GUID.ToString());
     }
 
+
+
     #region Serialization/Deserialization Methods
 
     protected override void SerializeCore(XmlElement element, SaveContext context)
@@ -592,6 +567,7 @@ namespace SpeckleDynamo
           var subNode = xmlDocument.CreateElement("Speckle");
           subNode.SetAttribute("speckleclient", client);
           //could be part of the sender
+          subNode.SetAttribute("stream", StreamId);
           subNode.SetAttribute("email", Email);
           subNode.SetAttribute("server", Server);
           subNode.SetAttribute("paused", Paused.ToString());
@@ -629,13 +605,10 @@ namespace SpeckleDynamo
                 BinaryFormatter bformatter = new BinaryFormatter();
                 myReceiver = (SpeckleApiClient)bformatter.Deserialize(output);
                 RestApi = myReceiver.BaseUrl;
-                StreamId = myReceiver.StreamId;
-                AuthToken = myReceiver.AuthToken;
-
-                InitReceiverEventsAndGlobals();
-       
-
               }
+              break;
+            case "stream":
+              StreamId = attr.Value;
               break;
             case "email":
               Email = attr.Value;

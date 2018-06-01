@@ -4,6 +4,7 @@ using Dynamo.Graph.Nodes;
 using Newtonsoft.Json;
 using ProtoCore.AST.AssociativeAST;
 using SpeckleCore;
+using SpeckleDynamo.Serialization;
 using SpeckleDynamo.Utils;
 using System;
 using System.Collections;
@@ -33,45 +34,37 @@ namespace SpeckleDynamo
     private string _server;
     private string _streamId;
     private string _message = "Initialising...";
-
+    private Timer MetadataSender, DataSender;
+    private ArrayList DataBridgeData = new ArrayList();
+    private string BucketName;
+    private List<Layer> BucketLayers = new List<Layer>();
+    private List<object> BucketObjects = new List<object>();
+    private bool _registeringPorts = false;
+    private List<int> branchIndexes = new List<int>();
+    private Dictionary<string, int> branches = new Dictionary<string, int>();
+    private ObservableCollectionEx<InputName> _inputs = new ObservableCollectionEx<InputName> { new InputName("A"), new InputName("B"), new InputName("C") };
+    internal Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
+    internal string Log { get; set; }
     internal string AuthToken { get => _authToken; set { _authToken = value; NotifyPropertyChanged("AuthToken"); } }
+
+    #region public properties
     public string RestApi { get => _restApi; set { _restApi = value; NotifyPropertyChanged("RestApi"); } }
     public string Email { get => _email; set { _email = value; NotifyPropertyChanged("Email"); } }
     public string Server { get => _server; set { _server = value; NotifyPropertyChanged("Server"); } }
     public string StreamId { get => _streamId; set { _streamId = value; NotifyPropertyChanged("StreamId"); } }
+    [JsonIgnore]
     public string Message { get => _message; set { _message = value; NotifyPropertyChanged("Message"); } }
-
+    [JsonIgnore]
+    public ObservableCollectionEx<InputName> Inputs { get => _inputs; set { _inputs = value; NotifyPropertyChanged("Inputs"); } }
+    [JsonConverter(typeof(SpeckleClientConverter))]
     public SpeckleApiClient mySender;
-    internal string Log { get; set; }
-    System.Timers.Timer MetadataSender, DataSender;
-    private string BucketName;
-    private List<Layer> BucketLayers = new List<Layer>();
-    private List<object> BucketObjects = new List<object>();
-    internal Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
-    private ArrayList DataBridgeData = new ArrayList();
-
-    //The node is expired 3 times when a port is added/removed!!!
-    //private int _updatingPorts = 0;
-    private bool _registeringPorts = false;
-
-    private List<int> branchIndexes = new List<int>();
-    private Dictionary<string, int> branches = new Dictionary<string, int>();
-
-    private ObservableCollectionEx<InputName> _inputs = new ObservableCollectionEx<InputName> { new InputName("A"), new InputName("B"), new InputName("C") };
-    public ObservableCollectionEx<InputName> Inputs
-    {
-      get => _inputs;
-      set
-      {
-
-        _inputs = value;
-        NotifyPropertyChanged("Inputs");
-      }
-    }
+    #endregion
+   
 
     [JsonConstructor]
     private Sender(IEnumerable<PortModel> inPorts, IEnumerable<PortModel> outPorts) : base(inPorts, outPorts)
     {
+      var hack = new ConverterHack();
       ArgumentLacing = LacingStrategy.Disabled;
     }
 
@@ -259,6 +252,7 @@ namespace SpeckleDynamo
       //saved sender
       if (mySender != null)
       {
+        AuthToken = Utils.Accounts.GetAuthToken(Email, RestApi);
         InitializeSender(false);
         Message = "";
         return;
@@ -476,16 +470,6 @@ namespace SpeckleDynamo
 
     #region overrides
 
-    protected override string GetInputName(int index)
-    {
-      return index.ToString();
-    }
-
-    protected override string GetInputTooltip(int index)
-    {
-      return "Layer " + index.ToString();
-    }
-
 
     private void Inputs_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {
@@ -567,6 +551,17 @@ namespace SpeckleDynamo
       base.Dispose();
       /// Unregister the data bridge callback.
       VMDataBridge.DataBridge.Instance.UnregisterCallback(GUID.ToString());
+    }
+
+    protected override string GetInputName(int index)
+    {
+      return "item" + index;
+    }
+
+
+    protected override string GetInputTooltip(int index)
+    {
+      return "Layer "+ InPorts[index].Name;
     }
 
     #endregion

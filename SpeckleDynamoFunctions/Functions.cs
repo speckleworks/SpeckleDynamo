@@ -14,6 +14,11 @@ namespace SpeckleDynamo.Functions
         return SpeckleTempData.GetLayerObjects(layer);
     }
 
+    public static string Test(string test)
+    {
+      return "Hello "+test;
+    }
+
     public static string HelloWorld()
     {
       return "Hello World";
