@@ -129,6 +129,7 @@ namespace SpeckleDynamo
 
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
+      this.ClearErrorsAndWarnings();
 
       if (_registeringPorts)
         return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
@@ -208,7 +209,7 @@ namespace SpeckleDynamo
           associativeNodes.Add(AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex((int)layer.OrderIndex), functionCall));
 
         }
-
+        
         return associativeNodes;
       }
       

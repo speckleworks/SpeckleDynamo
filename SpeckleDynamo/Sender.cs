@@ -115,7 +115,7 @@ namespace SpeckleDynamo
 
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
-      //this.ClearRuntimeError();
+      this.ClearErrorsAndWarnings();
 
       if (_registeringPorts)
         return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
