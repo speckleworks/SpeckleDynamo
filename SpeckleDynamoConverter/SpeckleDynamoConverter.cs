@@ -353,8 +353,11 @@ namespace SpeckleDynamo
     public static Arc GetAsArc(this Curve curve)
     {
       if (curve.IsClosed) { throw new ArgumentException("Curve is closed, cannot be an Arc"); }
-      Point midPoint = curve.PointAtParameter(0.5);
-      return Arc.ByThreePoints(curve.StartPoint, midPoint, curve.EndPoint);
+      using (Point midPoint = curve.PointAtParameter(0.5))
+      {
+        return Arc.ByThreePoints(curve.StartPoint, midPoint, curve.EndPoint);
+      }
+      
     } 
 
     public static bool IsCircle(this Curve curve)
@@ -373,13 +376,8 @@ namespace SpeckleDynamo
 
       Point start = curve.StartPoint;
       using (Point midPoint = curve.PointAtParameter(0.5))
+      using (Point centre = Point.ByCoordinates(Median(start.X, midPoint.X), Median(start.Y, midPoint.Y), Median(start.Z, midPoint.Z) ))
       {
-        Point centre = Point.ByCoordinates(
-          Median(start.X, midPoint.X),
-          Median(start.Y, midPoint.Y),
-          Median(start.Z, midPoint.Z)
-        );
-
         return Circle.ByCenterPointRadiusNormal(
             centre,
             centre.DistanceTo(start),
@@ -413,19 +411,16 @@ namespace SpeckleDynamo
       double a = points[0].DistanceTo(points[2]) * 0.5; // Max Radius
       double b = points[1].DistanceTo(points[3]) * 0.5; // Min Radius
 
-      Point centre = Point.ByCoordinates(
-        Median(points[0].X, points[2].X),
-        Median(points[0].Y, points[2].Y),
-        Median(points[0].Z, points[2].Z)
-        );
+      using (Point centre = Point.ByCoordinates( Median(points[0].X, points[2].X), Median(points[0].Y, points[2].Y), Median(points[0].Z, points[2].Z) ))
+      {
+        points.ForEach(p => p.Dispose());
 
-      points.ForEach(p => p.Dispose());
-
-      return Ellipse.ByPlaneRadii(
-          Plane.ByOriginNormalXAxis(centre, curve.Normal, Vector.ByTwoPoints(centre, curve.StartPoint)),
-          a,
-          b
-          );
+        return Ellipse.ByPlaneRadii(
+            Plane.ByOriginNormalXAxis(centre, curve.Normal, Vector.ByTwoPoints(centre, curve.StartPoint)),
+            a,
+            b
+            );
+      }
     }
 
     #endregion
@@ -551,9 +546,9 @@ namespace SpeckleDynamo
     {
       if (polycurve.IsPolyline())
       {
-        var points = polycurve.Curves().Select(c => c.StartPoint).ToList();
-        points.Add(polycurve.Curves().Last().EndPoint);
-        return new SpecklePolyline(points.ToFlatArray());
+        var points = polycurve.Curves().SelectMany(c => c.StartPoint.ToArray()).ToList();
+        points.AddRange(polycurve.Curves().Last().EndPoint.ToArray());
+        return new SpecklePolyline(points);
       }
       else
       {
@@ -660,21 +655,11 @@ namespace SpeckleDynamo
 
       // SpeckleCurve DisplayValue
       Curve[] curves = curve.ApproximateWithArcAndLineSegments();
-      PolyCurve polyline = PolyCurve.ByJoinedCurves(curves.Select(c => Line.ByStartPointEndPoint(c.StartPoint, c.EndPoint)));
-      
-      SpecklePolyline displaValue;
-      if (polyline.NumberOfCurves == 1)
-      {
-        displaValue = new SpecklePolyline(
-          new Point[2] { polyline.Curves().First().StartPoint, polyline.Curves().First().EndPoint }.ToFlatArray()
-          );
-      }
-      else
-      {
-        displaValue = polyline.ToSpeckle() as SpecklePolyline;
-      }
+      List<double> polylineCoordinates = curves.SelectMany(c => new Point[2] { c.StartPoint, c.EndPoint }.ToFlatArray()).ToList();
+      polylineCoordinates.AddRange(curves.Last().EndPoint.ToArray());
+      curves.ForEach(c => c.Dispose());
 
-      polyline.Dispose(); // Not needed anymore
+      SpecklePolyline displaValue = new SpecklePolyline(polylineCoordinates);
       List<double> dsKnots = curve.Knots().ToList();
       dsKnots.RemoveAt(dsKnots.Count - 1);
       dsKnots.RemoveAt(0);
@@ -697,7 +682,10 @@ namespace SpeckleDynamo
 
     public static SpeckleObject ToSpeckle(this Helix helix)
     {
-      return helix.ToNurbsCurve().ToSpeckle();
+      using(NurbsCurve nurbsCurve = helix.ToNurbsCurve())
+      {
+        return nurbsCurve.ToSpeckle();
+      }
     }
 
     #endregion
