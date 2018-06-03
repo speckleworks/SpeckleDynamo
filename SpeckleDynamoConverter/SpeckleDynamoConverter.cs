@@ -524,10 +524,13 @@ namespace SpeckleDynamo
     /// </summary>
     /// <param name="arc"></param>
     /// <returns></returns>
-    public static SpeckleCurve ToSpeckle(this EllipseArc arc)
+    public static SpeckleObject ToSpeckle(this EllipseArc arc)
     {
-      //TODO: Implement EllipseArc converter
-      throw new NotImplementedException("EllipsArc not implemented yet.");
+      //EllipseArcs as NurbsCurves
+      using (NurbsCurve nurbsCurve = arc.ToNurbsCurve())
+      {
+        return nurbsCurve.ToSpeckle();
+      }
     }
 
     //public static EllipseArc ToNative(this SpeckleCurve arc)
@@ -660,7 +663,7 @@ namespace SpeckleDynamo
       curves.ForEach(c => c.Dispose());
 
       SpecklePolyline displaValue = new SpecklePolyline(polylineCoordinates);
-      List<double> dsKnots = curve.Knots().ToList();
+      List<double> dsKnots = curve.Knots().ToList(); 
       dsKnots.RemoveAt(dsKnots.Count - 1);
       dsKnots.RemoveAt(0);
 
