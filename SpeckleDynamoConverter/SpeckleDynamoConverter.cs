@@ -321,7 +321,6 @@ namespace SpeckleDynamo
 
     #region Curves Helper Methods
 
-
     public static bool IsLinear(this Curve curve)
     {
       if (curve.IsClosed) { return false; }
@@ -354,8 +353,11 @@ namespace SpeckleDynamo
     public static Arc GetAsArc(this Curve curve)
     {
       if (curve.IsClosed) { throw new ArgumentException("Curve is closed, cannot be an Arc"); }
-      Point midPoint = curve.PointAtParameter(0.5);
-      return Arc.ByThreePoints(curve.StartPoint, midPoint, curve.EndPoint);
+      using (Point midPoint = curve.PointAtParameter(0.5))
+      {
+        return Arc.ByThreePoints(curve.StartPoint, midPoint, curve.EndPoint);
+      }
+      
     } 
 
     public static bool IsCircle(this Curve curve)
@@ -374,13 +376,8 @@ namespace SpeckleDynamo
 
       Point start = curve.StartPoint;
       using (Point midPoint = curve.PointAtParameter(0.5))
+      using (Point centre = Point.ByCoordinates(Median(start.X, midPoint.X), Median(start.Y, midPoint.Y), Median(start.Z, midPoint.Z) ))
       {
-        Point centre = Point.ByCoordinates(
-          Median(start.X, midPoint.X),
-          Median(start.Y, midPoint.Y),
-          Median(start.Z, midPoint.Z)
-        );
-
         return Circle.ByCenterPointRadiusNormal(
             centre,
             centre.DistanceTo(start),
@@ -414,25 +411,21 @@ namespace SpeckleDynamo
       double a = points[0].DistanceTo(points[2]) * 0.5; // Max Radius
       double b = points[1].DistanceTo(points[3]) * 0.5; // Min Radius
 
-      Point centre = Point.ByCoordinates(
-        Median(points[0].X, points[2].X),
-        Median(points[0].Y, points[2].Y),
-        Median(points[0].Z, points[2].Z)
-        );
+      using (Point centre = Point.ByCoordinates( Median(points[0].X, points[2].X), Median(points[0].Y, points[2].Y), Median(points[0].Z, points[2].Z) ))
+      {
+        points.ForEach(p => p.Dispose());
 
-      points.ForEach(p => p.Dispose());
-
-      return Ellipse.ByPlaneRadii(
-          Plane.ByOriginNormalXAxis(centre, curve.Normal, Vector.ByTwoPoints(centre, curve.StartPoint)),
-          a,
-          b
-          );
+        return Ellipse.ByPlaneRadii(
+            Plane.ByOriginNormalXAxis(centre, curve.Normal, Vector.ByTwoPoints(centre, curve.StartPoint)),
+            a,
+            b
+            );
+      }
     }
 
     #endregion
 
     #region Curves
-
 
     /// <summary>
     /// DS Circle to SpeckleCircle
@@ -531,17 +524,20 @@ namespace SpeckleDynamo
     /// </summary>
     /// <param name="arc"></param>
     /// <returns></returns>
-    public static SpeckleCurve ToSpeckle(this EllipseArc arc)
+    public static SpeckleObject ToSpeckle(this EllipseArc arc)
     {
-      //TODO: Implement EllipseArc converter
-      throw new NotImplementedException("EllipsArc not implemented yet.");
+      //EllipseArcs as NurbsCurves
+      using (NurbsCurve nurbsCurve = arc.ToNurbsCurve())
+      {
+        return nurbsCurve.ToSpeckle();
+      }
     }
 
-    public static EllipseArc ToNative(this SpeckleCurve arc)
-    {
-      //TODO: Implement EllipseArc converter
-      throw new NotImplementedException("EllipsArc not implemented yet.");
-    }
+    //public static EllipseArc ToNative(this SpeckleCurve arc)
+    //{
+    //  //TODO: Implement EllipseArc converter
+    //  throw new NotImplementedException("EllipsArc not implemented yet.");
+    //}
 
     /// <summary>
     /// DS Polycurve to SpecklePolyline if all curves are linear
@@ -553,9 +549,9 @@ namespace SpeckleDynamo
     {
       if (polycurve.IsPolyline())
       {
-        var points = polycurve.Curves().Select(c => c.StartPoint).ToList();
-        points.Add(polycurve.Curves().Last().EndPoint);
-        return new SpecklePolyline(points.ToFlatArray());
+        var points = polycurve.Curves().SelectMany(c => c.StartPoint.ToArray()).ToList();
+        points.AddRange(polycurve.Curves().Last().EndPoint.ToArray());
+        return new SpecklePolyline(points);
       }
       else
       {
@@ -566,6 +562,39 @@ namespace SpeckleDynamo
       }
     }
 
+    public static PolyCurve ToNative (this SpecklePolycurve polycurve)
+    {
+      Curve[] curves = new Curve[polycurve.Segments.Count];
+      for(var i = 0; i < polycurve.Segments.Count; i++)
+      {
+        switch (polycurve.Segments[i])
+        {
+          case SpeckleLine curve:
+            curves[i] = curve.ToNative();
+            break;
+          case SpeckleArc curve:
+            curves[i] = curve.ToNative();
+            break;
+          case SpeckleCircle curve:
+            curves[i] = curve.ToNative();
+            break;
+          case SpeckleEllipse curve:
+            curves[i] = curve.ToNative();
+            break;
+          case SpecklePolycurve curve:
+            curves[i] = curve.ToNative();
+            break;
+          case SpecklePolyline curve:
+            curves[i] = curve.ToNative();
+            break;
+          case SpeckleCurve curve:
+            curves[i] = curve.ToNative();
+            break;
+        }
+      }
+
+      return PolyCurve.ByJoinedCurves(curves);
+    }
 
     public static SpeckleObject ToSpeckle(this Curve curve)
     {
@@ -586,24 +615,26 @@ namespace SpeckleDynamo
         using (Ellipse ellipse = curve.GetAsEllipse()) { return ellipse.ToSpeckle(); }
       }
 
-      throw new NotImplementedException("Not implemented yet, I'm gonna sleep.");
+      // Convert as NurbsCurve
+      return curve.ToNurbsCurve().ToSpeckle();
 
-      // NurbsCurve,shit.
-      using (PolyCurve polycurve = PolyCurve.ByJoinedCurves(curve.ApproximateWithArcAndLineSegments()))
-      {
-        SpecklePolyline displaValue;
-        if (polycurve.NumberOfCurves == 1)
-        {
-          displaValue = new SpecklePolyline(
-            new Point[2] { polycurve.Curves().First().StartPoint, polycurve.Curves().First().EndPoint }.ToFlatArray()
-            );
-        }
-        else
-        {
-          displaValue = polycurve.ToSpeckle() as SpecklePolyline;
-        }
-      }
+    }
 
+    public static NurbsCurve ToNative(this SpeckleCurve curve)
+    {
+      var points = curve.Points.ToPoints();
+      var dsKnots = curve.Knots;
+      dsKnots.Insert(0, dsKnots.First());
+      dsKnots.Add(dsKnots.Last());
+
+      NurbsCurve nurbsCurve = NurbsCurve.ByControlPointsWeightsKnots(
+          points,
+          curve.Weights.ToArray(),
+          dsKnots.ToArray(),
+          curve.Degree
+          );
+      
+      return nurbsCurve;
     }
 
     public static SpeckleObject ToSpeckle(this NurbsCurve curve)
@@ -625,187 +656,42 @@ namespace SpeckleDynamo
         using (Ellipse ellipse = curve.GetAsEllipse()) { return ellipse.ToSpeckle(); }
       }
 
-      throw new NotImplementedException("Not implemented yet, I'm gonna sleep.");
+      // SpeckleCurve DisplayValue
+      Curve[] curves = curve.ApproximateWithArcAndLineSegments();
+      List<double> polylineCoordinates = curves.SelectMany(c => new Point[2] { c.StartPoint, c.EndPoint }.ToFlatArray()).ToList();
+      polylineCoordinates.AddRange(curves.Last().EndPoint.ToArray());
+      curves.ForEach(c => c.Dispose());
+
+      SpecklePolyline displaValue = new SpecklePolyline(polylineCoordinates);
+      List<double> dsKnots = curve.Knots().ToList(); 
+      dsKnots.RemoveAt(dsKnots.Count - 1);
+      dsKnots.RemoveAt(0);
+
+      SpeckleCurve spkCurve = new SpeckleCurve(displaValue);
+      spkCurve.Weights = curve.Weights().ToList();
+      spkCurve.Points = curve.ControlPoints().ToFlatArray().ToList();
+      spkCurve.Knots = dsKnots;
+      spkCurve.Degree = curve.Degree;
+      spkCurve.Periodic = curve.IsPeriodic;
+      spkCurve.Rational = curve.IsRational;
+      spkCurve.Closed = curve.IsClosed;
+      //spkCurve.Domain
+      //spkCurve.Properties
+
+      spkCurve.GenerateHash();
+      return spkCurve;
+
+    }
+
+    public static SpeckleObject ToSpeckle(this Helix helix)
+    {
+      using(NurbsCurve nurbsCurve = helix.ToNurbsCurve())
+      {
+        return nurbsCurve.ToSpeckle();
+      }
     }
 
     #endregion
-
-
-
-
-    //    // Polycurve
-    //    // Rh Capture/Gh Capture
-    //    public static SpecklePolycurve ToSpeckle(this PolyCurve p)
-    //    {
-    //      SpecklePolycurve myPoly = new SpecklePolycurve();
-
-    //      p.RemoveNesting();
-    //      var segments = p.Explode();
-
-    //      myPoly.Segments = segments.Select(s => { return s.ToSpeckle(); }).ToList();
-    //      myPoly.Properties = p.UserDictionary.ToSpeckle();
-    //      myPoly.SetHashes(myPoly.Segments.Select(obj => obj.Hash).ToArray());
-    //      return myPoly;
-    //    }
-
-    //    public static PolyCurve ToNative(this SpecklePolycurve p)
-    //    {
-
-    //      PolyCurve myPolyc = new PolyCurve();
-    //      foreach (var segment in p.Segments)
-    //      {
-    //        if (segment.Type == SpeckleObjectType.Curve)
-    //          myPolyc.Append(((SpeckleCurve)segment).ToNative());
-
-    //        if (segment.Type == SpeckleObjectType.Line)
-    //          myPolyc.Append(((SpeckleLine)segment).ToNative());
-
-    //        if (segment.Type == SpeckleObjectType.Arc)
-    //          myPolyc.Append(((SpeckleArc)segment).ToNative());
-
-    //        if (segment.Type == SpeckleObjectType.Polyline)
-    //          myPolyc.Append(((SpecklePolyline)segment).ToNative().ToNurbsCurve());
-    //      }
-    //      myPolyc.UserDictionary.ReplaceContentsWith(p.Properties.ToNative());
-    //      return myPolyc;
-    //    }
-
-    //    public static SpeckleObject ToSpeckle(this Curve curve)
-    //    {
-    //      var properties = curve.UserDictionary.ToSpeckle();
-
-    //      if (curve is PolyCurve)
-    //      {
-    //        return ((PolyCurve)curve).ToSpeckle();
-    //      }
-
-    //      if (curve.IsArc())
-    //      {
-    //        Arc getObj; curve.TryGetArc(out getObj);
-    //        SpeckleArc myObject = getObj.ToSpeckle(); myObject.Properties = properties;
-    //        return myObject;
-    //      }
-
-    //      if (curve.IsCircle())
-    //      {
-    //        Circle getObj; curve.TryGetCircle(out getObj);
-    //        SpeckleCircle myObject = getObj.ToSpeckle(); myObject.Properties = properties;
-    //        return myObject;
-    //      }
-
-    //      if (curve.IsEllipse())
-    //      {
-    //        Ellipse getObj; curve.TryGetEllipse(out getObj);
-    //        SpeckleEllipse myObject = getObj.ToSpeckle(); myObject.Properties = properties;
-    //        return myObject;
-    //      }
-
-    //      if (curve.IsLinear() || curve.IsPolyline()) // defaults to polyline
-    //      {
-    //        Polyline getObj; curve.TryGetPolyline(out getObj);
-    //        SpeckleObject myObject = getObj.ToSpeckle(); myObject.Properties = properties;
-    //        return myObject;
-    //      }
-
-    //      Polyline poly;
-    //      curve.ToPolyline(0, 1, 0, 0, 0, 0.1, 0, 0, true).TryGetPolyline(out poly);
-
-    //      SpeckleCurve myCurve = new SpeckleCurve((SpecklePolyline)poly.ToSpeckle(), properties: curve.UserDictionary.ToSpeckle());
-    //      NurbsCurve nurbsCurve = curve.ToNurbsCurve();
-
-    //      myCurve.Weights = nurbsCurve.Points.Select(ctp => ctp.Weight).ToList();
-    //      myCurve.Points = nurbsCurve.Points.Select(ctp => ctp.Location).ToFlatArray().ToList();
-    //      myCurve.Knots = nurbsCurve.Knots.ToList();
-    //      myCurve.Degree = nurbsCurve.Degree;
-    //      myCurve.Periodic = nurbsCurve.IsPeriodic;
-    //      myCurve.Rational = nurbsCurve.IsRational;
-    //      myCurve.Domain = nurbsCurve.Domain.ToSpeckle();
-
-    //      myCurve.Properties = properties;
-    //      return myCurve;
-    //    }
-
-    //    // Curve
-    //    public static SpeckleObject ToSpeckle(this NurbsCurve curve)
-    //    {
-    //      var properties = curve.UserDictionary.ToSpeckle();
-
-    //      if (curve.IsArc())
-    //      {
-    //        Arc getObj; curve.TryGetArc(out getObj);
-    //        SpeckleArc myObject = getObj.ToSpeckle(); myObject.Properties = properties;
-    //        return myObject;
-    //      }
-
-    //      if (curve.IsCircle())
-    //      {
-    //        Circle getObj; curve.TryGetCircle(out getObj);
-    //        SpeckleCircle myObject = getObj.ToSpeckle(); myObject.Properties = properties;
-    //        return myObject;
-    //      }
-
-    //      if (curve.IsEllipse())
-    //      {
-    //        Ellipse getObj; curve.TryGetEllipse(out getObj);
-    //        SpeckleEllipse myObject = getObj.ToSpeckle(); myObject.Properties = properties;
-    //        return myObject;
-    //      }
-
-    //      if (curve.IsLinear() || curve.IsPolyline()) // defaults to polyline
-    //      {
-    //        Polyline getObj; curve.TryGetPolyline(out getObj);
-    //        SpeckleObject myObject = getObj.ToSpeckle(); myObject.Properties = properties;
-    //        return myObject;
-    //      }
-
-    //      Polyline poly;
-    //      curve.ToPolyline(0, 1, 0, 0, 0, 0.1, 0, 0, true).TryGetPolyline(out poly);
-
-    //      SpeckleCurve myCurve = new SpeckleCurve(poly: (SpecklePolyline)poly.ToSpeckle(), properties: curve.UserDictionary.ToSpeckle());
-
-    //      myCurve.Weights = curve.Points.Select(ctp => ctp.Weight).ToList();
-    //      myCurve.Points = curve.Points.Select(ctp => ctp.Location).ToFlatArray().ToList();
-    //      myCurve.Knots = curve.Knots.ToList();
-    //      myCurve.Degree = curve.Degree;
-    //      myCurve.Periodic = curve.IsPeriodic;
-    //      myCurve.Rational = curve.IsRational;
-    //      myCurve.Domain = curve.Domain.ToSpeckle();
-
-    //      myCurve.Properties = properties;
-    //      return myCurve;
-    //    }
-
-    //    public static NurbsCurve ToNative(this SpeckleCurve curve)
-    //    {
-    //      var ptsList = curve.Points.ToPoints();
-
-    //      // Bug/feature in Rhino sdk: creating a periodic curve adds two extra stupid points? 
-    //      var myCurve = NurbsCurve.Create(curve.Periodic, curve.Degree, new Point3d[curve.Periodic ? ptsList.Length - 2 : ptsList.Length]);
-    //      myCurve.Domain = curve.Domain.ToNative();
-
-    //      for (int i = 0; i < ptsList.Length; i++)
-    //        myCurve.Points.SetPoint(i, ptsList[i].X, ptsList[i].Y, ptsList[i].Z, curve.Weights[i]);
-
-    //      for (int i = 0; i < curve.Knots.Count; i++)
-    //        myCurve.Knots[i] = curve.Knots[i];
-
-    //      return myCurve;
-    //    }
-
-    //    #endregion
-
-    //    // do not worry (too much!) from down here onwards
-
-    //    // Box
-    //    public static SpeckleBox ToSpeckle(this Box box)
-    //    {
-    //      return new SpeckleBox(box.Plane.ToSpeckle(), box.X.ToSpeckle(), box.Y.ToSpeckle(), box.Z.ToSpeckle());
-    //    }
-
-    //    public static Box ToNative(this SpeckleBox box)
-    //    {
-    //      return new Box(box.BasePlane.ToNative(), box.XSize.ToNative(), box.YSize.ToNative(), box.ZSize.ToNative());
-    //    }
 
     // Meshes
     public static SpeckleMesh ToSpeckle(this Mesh mesh)
@@ -856,181 +742,6 @@ namespace SpeckleDynamo
 
       return Mesh.ByPointsFaceIndices(points, faces);
     }
-
-    //    // Breps
-    //    public static SpeckleBrep ToSpeckle(this Brep brep)
-    //    {
-    //      var joinedMesh = new Mesh();
-    //      if (SpeckleRhinoConverter.SetBrepDisplayMesh)
-    //      {
-    //        MeshingParameters mySettings;
-    //#if R6
-    //      mySettings = new MeshingParameters(0);
-    //#else
-    //        mySettings = MeshingParameters.Coarse;
-
-    //        mySettings.SimplePlanes = true;
-    //        mySettings.RelativeTolerance = 0;
-    //        mySettings.GridAspectRatio = 6;
-    //        mySettings.GridAngle = Math.PI;
-    //        mySettings.GridAspectRatio = 0;
-    //        mySettings.SimplePlanes = true;
-    //#endif
-
-    //        Mesh.CreateFromBrep(brep, mySettings).All(meshPart => { joinedMesh.Append(meshPart); return true; });
-    //      }
-
-    //      return new SpeckleBrep(displayValue: SpeckleRhinoConverter.SetBrepDisplayMesh ? joinedMesh.ToSpeckle() : null, rawData: JsonConvert.SerializeObject(brep), provenance: "Rhino", properties: brep.UserDictionary.ToSpeckle());
-    //    }
-
-    //    public static Brep ToNative(this SpeckleBrep brep)
-    //    {
-    //      try
-    //      {
-    //        if (brep.Provenance == "Rhino")
-    //        {
-    //          var myBrep = JsonConvert.DeserializeObject<Brep>((string)brep.RawData);
-    //          myBrep.UserDictionary.ReplaceContentsWith(brep.Properties.ToNative());
-    //          return myBrep;
-    //        }
-    //        throw new Exception("Unknown brep provenance: " + brep.Provenance + ". Don't know how to convert from one to the other.");
-    //      }
-    //      catch
-    //      {
-    //        System.Diagnostics.Debug.WriteLine("Failed to deserialise brep");
-    //        return null;
-    //      }
-    //    }
-
-    //    // Extrusions
-    //    public static SpeckleExtrusion ToSpeckle(this Rhino.Geometry.Extrusion extrusion)
-    //    {
-    //      //extrusion.PathTangent
-    //      var myExtrusion = new SpeckleExtrusion(extrusion.Profile3d(0, 0).ToSpeckle(), extrusion.PathStart.DistanceTo(extrusion.PathEnd), extrusion.IsCappedAtBottom);
-
-    //      myExtrusion.PathStart = extrusion.PathStart.ToSpeckle();
-    //      myExtrusion.PathEnd = extrusion.PathEnd.ToSpeckle();
-    //      myExtrusion.PathTangent = extrusion.PathTangent.ToSpeckle();
-    //      myExtrusion.ProfileTransformation = extrusion.GetProfileTransformation(0.0);
-    //      var Profiles = new List<SpeckleObject>();
-    //      for (int i = 0; i < extrusion.ProfileCount; i++)
-    //        Profiles.Add(extrusion.Profile3d(i, 0).ToSpeckle());
-    //      myExtrusion.Profiles = Profiles;
-    //      myExtrusion.Properties = extrusion.UserDictionary.ToSpeckle();
-    //      myExtrusion.SetHashes(myExtrusion);
-    //      return myExtrusion;
-    //    }
-
-    //    public static Rhino.Geometry.Extrusion ToNative(this SpeckleExtrusion extrusion)
-    //    {
-    //      Curve profile = null;
-
-    //      switch (extrusion.Profile.Type)
-    //      {
-    //        case SpeckleObjectType.Curve:
-    //          profile = ((SpeckleCurve)extrusion.Profile).ToNative();
-    //          break;
-    //        case SpeckleObjectType.Polycurve:
-    //          profile = (((SpecklePolycurve)extrusion.Profile).ToNative());
-    //          if (!profile.IsClosed)
-    //            profile.Reverse();
-    //          break;
-    //        case SpeckleObjectType.Polyline:
-    //          profile = ((SpecklePolyline)extrusion.Profile).ToNative();
-    //          if (!profile.IsClosed)
-    //            profile.Reverse();
-    //          break;
-    //        case SpeckleObjectType.Arc:
-    //          profile = ((SpeckleArc)extrusion.Profile).ToNative();
-    //          break;
-    //        case SpeckleObjectType.Circle:
-    //          profile = ((SpeckleCircle)extrusion.Profile).ToNative();
-    //          break;
-    //        case SpeckleObjectType.Ellipse:
-    //          profile = ((SpeckleEllipse)extrusion.Profile).ToNative();
-    //          break;
-    //        case SpeckleObjectType.Line:
-    //          profile = ((SpeckleLine)extrusion.Profile).ToNative();
-    //          break;
-    //        default:
-    //          profile = null;
-    //          break;
-    //      }
-
-    //      if (profile == null) return null;
-
-    //      var myExtrusion = Extrusion.Create(profile.ToNurbsCurve(), (double)extrusion.Length, (bool)extrusion.Capped);
-
-    //      myExtrusion.UserDictionary.ReplaceContentsWith(extrusion.Properties.ToNative());
-    //      return myExtrusion;
-    //    }
-
-    //    // Texts & Annotations
-    //    public static SpeckleAnnotation ToSpeckle(this TextEntity textentity)
-    //    {
-    //      Rhino.DocObjects.Font font = Rhino.RhinoDoc.ActiveDoc.Fonts[textentity.FontIndex];
-
-    //      var myAnnotation = new SpeckleAnnotation();
-    //      myAnnotation.Text = textentity.Text;
-    //      myAnnotation.Plane = textentity.Plane.ToSpeckle();
-    //      myAnnotation.FontName = font.FaceName;
-    //      myAnnotation.TextHeight = textentity.TextHeight;
-    //      myAnnotation.Bold = font.Bold;
-    //      myAnnotation.Italic = font.Italic;
-    //      myAnnotation.SetHashes(myAnnotation);
-
-    //      return myAnnotation;
-    //    }
-
-    //    public static SpeckleAnnotation ToSpeckle(this TextDot textdot)
-    //    {
-    //      var myAnnotation = new SpeckleAnnotation();
-    //      myAnnotation.Text = textdot.Text;
-    //      myAnnotation.Location = textdot.Point.ToSpeckle();
-    //      myAnnotation.SetHashes(myAnnotation);
-
-    //      return myAnnotation;
-    //    }
-
-    //    public static object ToNative(this SpeckleAnnotation annot)
-    //    {
-    //      if (annot.Plane != null)
-    //      {
-    //        // TEXT ENTITIY 
-    //        var textEntity = new TextEntity()
-    //        {
-    //          Text = annot.Text,
-    //          Plane = annot.Plane.ToNative(),
-    //          FontIndex = Rhino.RhinoDoc.ActiveDoc.Fonts.FindOrCreate(annot.FontName, (bool)annot.Bold, (bool)annot.Italic),
-    //          TextHeight = (double)annot.TextHeight
-    //        };
-    //#if R6
-    //                var dimStyleIndex = Rhino.RhinoDoc.ActiveDoc.DimStyles.Add("Speckle");
-    //                var dimStyle = new Rhino.DocObjects.DimensionStyle
-    //                {
-    //                    TextHeight = (double)annot.TextHeight,
-    //                    Font = new Rhino.DocObjects.Font(annot.FontName, Rhino.DocObjects.Font.FontWeight.Bold, Rhino.DocObjects.Font.FontStyle.Italic, false, false)
-    //                };
-    //                Rhino.RhinoDoc.ActiveDoc.DimStyles.Modify(dimStyle, dimStyleIndex, true);
-
-    //                textEntity.DimensionStyleId = Rhino.RhinoDoc.ActiveDoc.DimStyles[dimStyleIndex].Id;
-
-    //#endif
-
-    //        return textEntity;
-    //      }
-    //      else
-    //      {
-    //        // TEXT DOT!
-    //        var myTextdot = new TextDot(annot.Text, annot.Location.ToNative().Location);
-    //        myTextdot.UserDictionary.ReplaceContentsWith(annot.Properties.ToNative());
-    //        return myTextdot;
-    //      }
-    //    }
-
-
-    // Blocks and groups
-    // TODO
 
   }
 }

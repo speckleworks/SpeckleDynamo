@@ -1,7 +1,3 @@
----
-typora-copy-images-to: images
----
-
 # SpeckleDynamo
 
 ![speckle](images/speckle.gif)
@@ -55,7 +51,7 @@ Start actions have been set to launch Dynamo Sandbox 1.3.
 
 - dynamic inputs and outputs on sender/receiver
 
-  ​
+
 
 #### What's not working
 
@@ -64,7 +60,6 @@ Start actions have been set to launch Dynamo Sandbox 1.3.
 - ID input on receiver is not doing anything, should override the value in the text box
 - various bugs
 - 
-
 
 
 ## About Speckle

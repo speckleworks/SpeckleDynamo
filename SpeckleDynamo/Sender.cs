@@ -31,7 +31,7 @@ namespace SpeckleDynamo
     private string _restApi;
     private string _email;
     private string _server;
-    private string _stream;
+    private string _streamId;
     private string _message = "Initialising...";
 
 
@@ -40,7 +40,7 @@ namespace SpeckleDynamo
     public string RestApi { get => _restApi; set { _restApi = value; NotifyPropertyChanged("RestApi"); } }
     public string Email { get => _email; set { _email = value; NotifyPropertyChanged("Email"); } }
     public string Server { get => _server; set { _server = value; NotifyPropertyChanged("Server"); } }
-    public string Stream { get => _stream; set { _stream = value; NotifyPropertyChanged("Stream"); } }
+    public string StreamId { get => _streamId; set { _streamId = value; NotifyPropertyChanged("StreamId"); } }
     public string Message { get => _message; set { _message = value; NotifyPropertyChanged("Message"); } }
 
 
@@ -51,10 +51,14 @@ namespace SpeckleDynamo
     private List<Layer> BucketLayers = new List<Layer>();
     private List<object> BucketObjects = new List<object>();
     public Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
-    private List<object> DataBridgeData = new List<object>();
+    private ArrayList DataBridgeData = new ArrayList();
 
     //The node is expired 3 times when a port is added/removed!!!
     private int _updatingPorts = 0;
+
+    private List<int> branchIndexes = new List<int>();
+    private Dictionary<string, int> branches = new Dictionary<string, int>();
+    private int elemCount = 0;
 
 
     public Sender()
@@ -64,25 +68,15 @@ namespace SpeckleDynamo
       //needs to be done here otherwise outports are wiped out upon adding /removing input ports, not sure why
       OutPortData.Add(new PortData("Log", "Log Data"));
       OutPortData.Add(new PortData("ID", "Stream ID"));
+      InPortData.Add(new PortData("A", Guid.NewGuid().ToString()));
+      InPortData.Add(new PortData("B", Guid.NewGuid().ToString()));
+      InPortData.Add(new PortData("C", Guid.NewGuid().ToString()));
       RegisterAllPorts();
       //PropertyChanged += SendData_PropertyChanged;
       ArgumentLacing = LacingStrategy.Disabled;
     }
 
-    protected override void OnBuilt()
-    {
-      base.OnBuilt();
-      VMDataBridge.DataBridge.Instance.RegisterCallback(GUID.ToString(), DataBridgeCallback);
-    }
 
-    /// <summary>
-    /// Unregister the data bridge callback.
-    /// </summary>
-    public override void Dispose()
-    {
-      base.Dispose();
-      VMDataBridge.DataBridge.Instance.UnregisterCallback(GUID.ToString());
-    }
 
     /// <summary>
     /// Callback method for DataBridge mechanism.
@@ -92,17 +86,19 @@ namespace SpeckleDynamo
     /// <param name="data">The data passed through the data bridge.</param>
     private void DataBridgeCallback(object obj)
     {
-      ArrayList inputs = obj as ArrayList;
       try
       {
-        DataBridgeData = new List<object>();
-        for (var i = 0; i < inputs.Count; i++)
-        {
-          if(!this.HasConnectedInput(i))
-            DataBridgeData.Add(new List<object>());
-          else 
-            DataBridgeData.Add(inputs[i]);
-        }
+        // DataBridgeData = new List<object>();
+
+        DataBridgeData = obj as ArrayList;
+
+        //for (var i = 0; i < inputs.Count; i++)
+        //{
+        //  if (!this.HasConnectedInput(i))
+        //    DataBridgeData.Add(new List<object>());
+        //  else
+        //    DataBridgeData.Add(inputs[i]);
+        //}
 
         UpdateData();
 
@@ -117,8 +113,8 @@ namespace SpeckleDynamo
 
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
-      if(mySender == null)
-        return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode())};
+      if (mySender == null)
+        return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
 
       var associativeNodes = new List<AssociativeNode> {
                      AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildStringNode(Log)),
@@ -130,7 +126,7 @@ namespace SpeckleDynamo
         _updatingPorts--;
         return associativeNodes;
       }
-        
+
       if (InPortData.Count == 0)
         return associativeNodes;
 
@@ -138,7 +134,7 @@ namespace SpeckleDynamo
       associativeNodes.Add(AstFactory.BuildAssignment(
                         AstFactory.BuildIdentifier(AstIdentifierBase + "_dummy"),
                         VMDataBridge.DataBridge.GenerateBridgeDataAst(GUID.ToString(), AstFactory.BuildExprList(inputAstNodes))));
-      
+
       return associativeNodes;
     }
 
@@ -146,11 +142,16 @@ namespace SpeckleDynamo
     {
       BucketName = this.NickName;
       BucketLayers = this.GetLayers();
-      BucketObjects = DataBridgeData;
+
+      BucketObjects = new List<object>();
+      RecursivelyFlattenData(DataBridgeData, BucketObjects);
 
       DataSender.Start();
     }
-
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
     public List<Layer> GetLayers()
     {
       List<Layer> layers = new List<Layer>();
@@ -158,10 +159,11 @@ namespace SpeckleDynamo
       int orderIndex = 0;
       foreach (var myParam in InPortData)
       {
-        string topo = "";
-        int count = 0;
         var data = DataBridgeData.Count - 1 >= orderIndex ? DataBridgeData[orderIndex] : null;
-        GetTopology(data, ref topo, ref count);
+        GetTopology(data);
+
+        var topo = string.Join(" ", branches.Select(x => x.Key + "-" + x.Value));
+        var count = branches.Sum(x => x.Value);
 
 
         Layer myLayer = new Layer(
@@ -179,20 +181,71 @@ namespace SpeckleDynamo
       return layers;
     }
 
-    //TODO: support nesting / datatrees
-    private void GetTopology(object data, ref string topo, ref int count)
+    private void GetTopology(object data)
     {
-      if (data is List<object>)
-      {
-        var objects = data as List<object>;
-        count = objects.Count;
-      }
+      branches = new Dictionary<string, int>();
+      branchIndexes = new List<int>();
+      elemCount = 0;
+
+      //recursion takes an ArrayList
+      if (data is ArrayList)
+        RecursivelyCreateTopology(data as ArrayList);
       else
-        count = 1;
-      topo = "0-" + count+" ";
+        RecursivelyCreateTopology(new ArrayList { data });
     }
 
+    private void RecursivelyCreateTopology(ArrayList list)
+    {
+      try
+      {
+        for (int i = 0; i < list.Count; i++)
+        {
+          var item = list[i];
+          if (item is ArrayList)
+          {
+            branchIndexes.Add(i);
+            RecursivelyCreateTopology(item as ArrayList);
 
+            //after adding all items of the branch go back one level
+            if (branchIndexes.Any())
+              branchIndexes.RemoveAt(branchIndexes.Count - 1);
+          }
+          else
+          {
+            if (!branchIndexes.Any())
+              branchIndexes.Add(0);
+            var thisBranchTopo = string.Join(";", branchIndexes.Select(x => x.ToString()));
+            if (branches.ContainsKey(thisBranchTopo))
+              branches[thisBranchTopo] = branches[thisBranchTopo] + 1;
+            else
+              branches[thisBranchTopo] = 1;
+
+          }
+        }
+      }
+      catch(Exception e)
+      {
+        throw e;
+      }
+    }
+
+    private void RecursivelyFlattenData(ArrayList list, List<object> flattenedList)
+    {
+      for (int i = 0; i < list.Count; i++)
+      {
+        if (list[i] is ArrayList)
+          RecursivelyFlattenData(list[i] as ArrayList, flattenedList);
+        else
+        {
+          ////TODO: remove once nulls are supported
+          //if (list[i] == null)
+          //  flattenedList.Add("null");
+          //else
+            flattenedList.Add(list[i]);
+        }
+         
+      }
+    }
 
     internal void ForceSendClick(object sender, RoutedEventArgs e)
     {
@@ -240,7 +293,7 @@ namespace SpeckleDynamo
 
       mySender.OnReady += (sender, e) =>
         {
-          Stream = mySender.StreamId;
+          StreamId = mySender.StreamId;
           //this.Locked = false;
           NickName = "Anonymous Stream";
           //Rhino.RhinoApp.MainApplicationWindow.Invoke(ExpireComponentAction);
@@ -371,7 +424,7 @@ namespace SpeckleDynamo
 
       Log += response.Result.Message;
       Message = "Data sent\n@" + DateTime.Now.ToString("HH:mm:ss");
-     
+
     }
 
     public void UpdateMetadata()
@@ -407,6 +460,8 @@ namespace SpeckleDynamo
       OnNodeModified(true);
     }
 
+    #region overrides
+
     protected override string GetInputName(int index)
     {
       return index.ToString();
@@ -441,12 +496,26 @@ namespace SpeckleDynamo
 
     protected override void OnConnectorAdded(ConnectorModel obj)
     {
-      //TODO: find a better strategy to rename in ports, maybe with a right click? Or with a popup?
-      //InPortData[obj.End.Index].NickName = obj.Start.Owner.NickName;
-      //InPortData[obj.End.Index].ToolTipString = obj.Start.Owner.NickName;
-      //RegisterAllPorts();
       base.OnConnectorAdded(obj);
     }
+
+    protected override void OnBuilt()
+    {
+      base.OnBuilt();
+      VMDataBridge.DataBridge.Instance.RegisterCallback(GUID.ToString(), DataBridgeCallback);
+    }
+
+    public override void Dispose()
+    {
+      if (mySender != null)
+        mySender.Dispose();
+      base.Dispose();
+      /// Unregister the data bridge callback.
+      VMDataBridge.DataBridge.Instance.UnregisterCallback(GUID.ToString());
+    }
+
+    #endregion
+
 
     static IEnumerable<string> GetSequence(string start = "")
     {
