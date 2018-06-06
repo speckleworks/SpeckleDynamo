@@ -103,8 +103,13 @@ namespace SpeckleDynamo
       return b.Value;
     }
     #endregion
+<<<<<<< HEAD
 
 
+=======
+
+
+>>>>>>> origin/dev
     #region Strings
     public static SpeckleString ToSpeckle(this string b)
     {
@@ -130,6 +135,7 @@ namespace SpeckleDynamo
     {
       return new SpecklePoint(pt.X, pt.Y, pt.Z);
     }
+<<<<<<< HEAD
 
     /// <summary>
     /// Speckle Point to DS Point
@@ -143,6 +149,21 @@ namespace SpeckleDynamo
       return myPoint;
     }
 
+=======
+
+    /// <summary>
+    /// Speckle Point to DS Point
+    /// </summary>
+    /// <param name="pt"></param>
+    /// <returns></returns>
+    public static Point ToNative(this SpecklePoint pt)
+    {
+      var myPoint = Point.ByCoordinates(pt.Value[0], pt.Value[1], pt.Value[2]);
+
+      return myPoint;
+    }
+
+>>>>>>> origin/dev
     /// <summary>
     /// Array of point coordinates to array of DS Points
     /// </summary>
@@ -237,8 +258,13 @@ namespace SpeckleDynamo
       return returnPlane;
     }
     #endregion
+<<<<<<< HEAD
 
 
+=======
+
+
+>>>>>>> origin/dev
     #region Linear
 
     /// <summary>
@@ -274,6 +300,7 @@ namespace SpeckleDynamo
         Closed = true
       };
     }
+<<<<<<< HEAD
 
     /// <summary>
     /// DS Rectangle to SpecklePolyline
@@ -321,6 +348,54 @@ namespace SpeckleDynamo
 
     #region Curves Helper Methods
 
+=======
+
+    /// <summary>
+    /// DS Rectangle to SpecklePolyline
+    /// </summary>
+    /// <param name="rect"></param>
+    /// <returns></returns>
+    public static SpecklePolyline ToSpeckle(this Rectangle rect)
+    {
+      return (rect as Polygon).ToSpeckle();
+    }
+
+    /// <summary>
+    /// SpecklePolyline to DS Rectangle if closed , four points and sides parallel; 
+    /// DS Polygon if closed or DS Polycurve otherwise
+    /// </summary>
+    /// <param name="polyline"></param>
+    /// <returns></returns>
+    public static Curve ToNative(this SpecklePolyline polyline)
+    {
+      var points = polyline.Value.ToPoints();
+      var polycurve = PolyCurve.ByPoints(polyline.Value.ToPoints());
+
+      // If closed and planar, make polygon
+      if (polyline.Closed && polycurve.IsPlanar)
+      {
+        polycurve.Dispose(); // geometry not needed. Freeing memory.
+        double dot = Vector.ByTwoPoints(points[0], points[1]).Dot(Vector.ByTwoPoints(points[1], points[2]));
+
+        if (points.Count() == 4 && Threshold(dot, 0))
+        {
+          return Rectangle.ByCornerPoints(points);
+        }
+        else
+        {
+          return Polygon.ByPoints(polyline.Value.ToPoints());
+        }
+      }
+      else
+      {
+        return polycurve;
+      }
+    }
+
+    #endregion
+
+    #region Curves Helper Methods
+>>>>>>> origin/dev
 
     public static bool IsLinear(this Curve curve)
     {
@@ -349,6 +424,7 @@ namespace SpeckleDynamo
       {
         return Threshold(arc.Length, curve.Length);
       }
+<<<<<<< HEAD
     }
 
     public static Arc GetAsArc(this Curve curve)
@@ -409,10 +485,56 @@ namespace SpeckleDynamo
     public static Ellipse GetAsEllipse(this Curve curve)
     {
       if (!curve.IsClosed) { throw new ArgumentException("Curve is not closed, cannot be an Ellipse"); }
+=======
+    }
+
+    public static Arc GetAsArc(this Curve curve)
+    {
+      if (curve.IsClosed) { throw new ArgumentException("Curve is closed, cannot be an Arc"); }
+      using (Point midPoint = curve.PointAtParameter(0.5))
+      {
+        return Arc.ByThreePoints(curve.StartPoint, midPoint, curve.EndPoint);
+      }
+      
+    } 
+
+    public static bool IsCircle(this Curve curve)
+    {
+      if (!curve.IsClosed) { return false; }
+      using(Point midPoint = curve.PointAtParameter(0.5))
+      {
+        double radius = curve.StartPoint.DistanceTo(midPoint) * 0.5;
+        return Threshold(radius, (curve.Length) / (2 * Math.PI));
+      }
+    }
+
+    public static Circle GetAsCircle(this Curve curve)
+    {
+      if (!curve.IsClosed) { throw new ArgumentException("Curve is not closed, cannot be a Circle"); }
+
+      Point start = curve.StartPoint;
+      using (Point midPoint = curve.PointAtParameter(0.5))
+      using (Point centre = Point.ByCoordinates(Median(start.X, midPoint.X), Median(start.Y, midPoint.Y), Median(start.Z, midPoint.Z) ))
+      {
+        return Circle.ByCenterPointRadiusNormal(
+            centre,
+            centre.DistanceTo(start),
+            curve.Normal
+        );
+      }
+    }
+
+    public static bool IsEllipse(this Curve curve)
+    {
+      if (!curve.IsClosed) { return false; }
+
+      //http://www.numericana.com/answer/ellipse.htm
+>>>>>>> origin/dev
       double[] parameters = new double[4] { 0, 0.25, 0.5, 0.75 };
       Point[] points = parameters.Select(p => curve.PointAtParameter(p)).ToArray();
       double a = points[0].DistanceTo(points[2]) * 0.5; // Max Radius
       double b = points[1].DistanceTo(points[3]) * 0.5; // Min Radius
+<<<<<<< HEAD
 
       Point centre = Point.ByCoordinates(
         Median(points[0].X, points[2].X),
@@ -429,11 +551,44 @@ namespace SpeckleDynamo
           );
     }
 
+=======
+      points.ForEach(p => p.Dispose());
+
+      double h = Math.Pow(a - b, 2) / Math.Pow(a + b, 2);
+      double perimeter = Math.PI * (a + b) * (1 + (3 * h / (10 + Math.Sqrt(4 - 3 * h))));
+
+      return Threshold(curve.Length, perimeter, 1e-5); //Ellipse perimeter is an approximation
+    }
+
+    public static Ellipse GetAsEllipse(this Curve curve)
+    {
+      if (!curve.IsClosed) { throw new ArgumentException("Curve is not closed, cannot be an Ellipse"); }
+      double[] parameters = new double[4] { 0, 0.25, 0.5, 0.75 };
+      Point[] points = parameters.Select(p => curve.PointAtParameter(p)).ToArray();
+      double a = points[0].DistanceTo(points[2]) * 0.5; // Max Radius
+      double b = points[1].DistanceTo(points[3]) * 0.5; // Min Radius
+
+      using (Point centre = Point.ByCoordinates( Median(points[0].X, points[2].X), Median(points[0].Y, points[2].Y), Median(points[0].Z, points[2].Z) ))
+      {
+        points.ForEach(p => p.Dispose());
+
+        return Ellipse.ByPlaneRadii(
+            Plane.ByOriginNormalXAxis(centre, curve.Normal, Vector.ByTwoPoints(centre, curve.StartPoint)),
+            a,
+            b
+            );
+      }
+    }
+
+>>>>>>> origin/dev
     #endregion
 
     #region Curves
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/dev
     /// <summary>
     /// DS Circle to SpeckleCircle
     /// </summary>
@@ -531,6 +686,7 @@ namespace SpeckleDynamo
     /// </summary>
     /// <param name="arc"></param>
     /// <returns></returns>
+<<<<<<< HEAD
     public static SpeckleCurve ToSpeckle(this EllipseArc arc)
     {
       //TODO: Implement EllipseArc converter
@@ -542,6 +698,22 @@ namespace SpeckleDynamo
       //TODO: Implement EllipseArc converter
       throw new NotImplementedException("EllipsArc not implemented yet.");
     }
+=======
+    public static SpeckleObject ToSpeckle(this EllipseArc arc)
+    {
+      //EllipseArcs as NurbsCurves
+      using (NurbsCurve nurbsCurve = arc.ToNurbsCurve())
+      {
+        return nurbsCurve.ToSpeckle();
+      }
+    }
+
+    //public static EllipseArc ToNative(this SpeckleCurve arc)
+    //{
+    //  //TODO: Implement EllipseArc converter
+    //  throw new NotImplementedException("EllipsArc not implemented yet.");
+    //}
+>>>>>>> origin/dev
 
     /// <summary>
     /// DS Polycurve to SpecklePolyline if all curves are linear
@@ -553,9 +725,15 @@ namespace SpeckleDynamo
     {
       if (polycurve.IsPolyline())
       {
+<<<<<<< HEAD
         var points = polycurve.Curves().Select(c => c.StartPoint).ToList();
         points.Add(polycurve.Curves().Last().EndPoint);
         return new SpecklePolyline(points.ToFlatArray());
+=======
+        var points = polycurve.Curves().SelectMany(c => c.StartPoint.ToArray()).ToList();
+        points.AddRange(polycurve.Curves().Last().EndPoint.ToArray());
+        return new SpecklePolyline(points);
+>>>>>>> origin/dev
       }
       else
       {
@@ -566,6 +744,42 @@ namespace SpeckleDynamo
       }
     }
 
+<<<<<<< HEAD
+=======
+    public static PolyCurve ToNative (this SpecklePolycurve polycurve)
+    {
+      Curve[] curves = new Curve[polycurve.Segments.Count];
+      for(var i = 0; i < polycurve.Segments.Count; i++)
+      {
+        switch (polycurve.Segments[i])
+        {
+          case SpeckleLine curve:
+            curves[i] = curve.ToNative();
+            break;
+          case SpeckleArc curve:
+            curves[i] = curve.ToNative();
+            break;
+          case SpeckleCircle curve:
+            curves[i] = curve.ToNative();
+            break;
+          case SpeckleEllipse curve:
+            curves[i] = curve.ToNative();
+            break;
+          case SpecklePolycurve curve:
+            curves[i] = curve.ToNative();
+            break;
+          case SpecklePolyline curve:
+            curves[i] = curve.ToNative();
+            break;
+          case SpeckleCurve curve:
+            curves[i] = curve.ToNative();
+            break;
+        }
+      }
+
+      return PolyCurve.ByJoinedCurves(curves);
+    }
+>>>>>>> origin/dev
 
     public static SpeckleObject ToSpeckle(this Curve curve)
     {
@@ -586,6 +800,7 @@ namespace SpeckleDynamo
         using (Ellipse ellipse = curve.GetAsEllipse()) { return ellipse.ToSpeckle(); }
       }
 
+<<<<<<< HEAD
       throw new NotImplementedException("Not implemented yet, I'm gonna sleep.");
 
       // NurbsCurve,shit.
@@ -604,6 +819,28 @@ namespace SpeckleDynamo
         }
       }
 
+=======
+      // Convert as NurbsCurve
+      return curve.ToNurbsCurve().ToSpeckle();
+
+    }
+
+    public static NurbsCurve ToNative(this SpeckleCurve curve)
+    {
+      var points = curve.Points.ToPoints();
+      var dsKnots = curve.Knots;
+      dsKnots.Insert(0, dsKnots.First());
+      dsKnots.Add(dsKnots.Last());
+
+      NurbsCurve nurbsCurve = NurbsCurve.ByControlPointsWeightsKnots(
+          points,
+          curve.Weights.ToArray(),
+          dsKnots.ToArray(),
+          curve.Degree
+          );
+      
+      return nurbsCurve;
+>>>>>>> origin/dev
     }
 
     public static SpeckleObject ToSpeckle(this NurbsCurve curve)
@@ -625,6 +862,7 @@ namespace SpeckleDynamo
         using (Ellipse ellipse = curve.GetAsEllipse()) { return ellipse.ToSpeckle(); }
       }
 
+<<<<<<< HEAD
       throw new NotImplementedException("Not implemented yet, I'm gonna sleep.");
     }
 
@@ -806,6 +1044,44 @@ namespace SpeckleDynamo
     //    {
     //      return new Box(box.BasePlane.ToNative(), box.XSize.ToNative(), box.YSize.ToNative(), box.ZSize.ToNative());
     //    }
+=======
+      // SpeckleCurve DisplayValue
+      Curve[] curves = curve.ApproximateWithArcAndLineSegments();
+      List<double> polylineCoordinates = curves.SelectMany(c => new Point[2] { c.StartPoint, c.EndPoint }.ToFlatArray()).ToList();
+      polylineCoordinates.AddRange(curves.Last().EndPoint.ToArray());
+      curves.ForEach(c => c.Dispose());
+
+      SpecklePolyline displaValue = new SpecklePolyline(polylineCoordinates);
+      List<double> dsKnots = curve.Knots().ToList(); 
+      dsKnots.RemoveAt(dsKnots.Count - 1);
+      dsKnots.RemoveAt(0);
+
+      SpeckleCurve spkCurve = new SpeckleCurve(displaValue);
+      spkCurve.Weights = curve.Weights().ToList();
+      spkCurve.Points = curve.ControlPoints().ToFlatArray().ToList();
+      spkCurve.Knots = dsKnots;
+      spkCurve.Degree = curve.Degree;
+      spkCurve.Periodic = curve.IsPeriodic;
+      spkCurve.Rational = curve.IsRational;
+      spkCurve.Closed = curve.IsClosed;
+      //spkCurve.Domain
+      //spkCurve.Properties
+
+      spkCurve.GenerateHash();
+      return spkCurve;
+
+    }
+
+    public static SpeckleObject ToSpeckle(this Helix helix)
+    {
+      using(NurbsCurve nurbsCurve = helix.ToNurbsCurve())
+      {
+        return nurbsCurve.ToSpeckle();
+      }
+    }
+
+    #endregion
+>>>>>>> origin/dev
 
     // Meshes
     public static SpeckleMesh ToSpeckle(this Mesh mesh)
@@ -856,6 +1132,7 @@ namespace SpeckleDynamo
 
       return Mesh.ByPointsFaceIndices(points, faces);
     }
+<<<<<<< HEAD
 
     //    // Breps
     //    public static SpeckleBrep ToSpeckle(this Brep brep)
@@ -1031,6 +1308,8 @@ namespace SpeckleDynamo
 
     // Blocks and groups
     // TODO
+=======
+>>>>>>> origin/dev
 
   }
 }
