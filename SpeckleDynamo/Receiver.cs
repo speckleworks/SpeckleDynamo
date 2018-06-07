@@ -48,7 +48,6 @@ namespace SpeckleDynamo
     private List<Layer> OldLayers = new List<Layer>();
     private List<SpeckleObject> SpeckleObjects;
     private List<object> ConvertedObjects;
-    private readonly SynchronizationContext _context;
     private bool hasNewData = false;
     private Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
     internal bool Receiving { get => !_paused; } //could instead use another value converter
@@ -74,7 +73,6 @@ namespace SpeckleDynamo
     private Receiver(IEnumerable<PortModel> inPorts, IEnumerable<PortModel> outPorts) : base(inPorts, outPorts)
     {
       var hack = new ConverterHack();
-      _context = SynchronizationContext.Current;
     }
 
     public Receiver()
@@ -82,9 +80,6 @@ namespace SpeckleDynamo
       var hack = new ConverterHack();
 
       RegisterAllPorts();
-
-      //for handling code execution on main thread, better ideas welcome
-      _context = SynchronizationContext.Current;
     }
 
     private void DataBridgeCallback(object obj)
@@ -277,8 +272,7 @@ namespace SpeckleDynamo
        
         //expire node on main thread
         hasNewData = true;
-        _context.Post(ExpireNode, "");
-
+       this.DispatchOnUIThread(() => { UpdateOutputStructure(); ExpireNode(); });
       });
     }
 
@@ -291,7 +285,7 @@ namespace SpeckleDynamo
       this.Name = result.Resource.Name;
       Layers = result.Resource.Layers.ToList();
       //run on main thread
-      _context.Post(UpdateOutputStructure, "");
+      this.DispatchOnUIThread(() => UpdateOutputStructure());
     }
 
     public virtual void UpdateChildren()
@@ -339,20 +333,6 @@ namespace SpeckleDynamo
       RegisterAllPorts();
     }
 
-    public void UpdateOutputStructure(object o)
-    {
-      UpdateOutputStructure();
-    }
-    private void ExpireNode(object o)
-    {
-      UpdateOutputStructure();
-
-      var delay = new System.Timers.Timer(2000) { AutoReset = false, Enabled = true };
-      delay.Elapsed += (sender, e) =>
-      {
-        ExpireNode();
-      };
-    }
     public void ExpireNode()
     {
       if (_coldStart)
@@ -403,8 +383,6 @@ namespace SpeckleDynamo
 
     private void ChangeStreams(string StreamId)
     {
-      //this.ClearRuntimeError();
-
       if (StreamId == OldStreamId)
         return;
       OldStreamId = StreamId;
@@ -435,7 +413,7 @@ namespace SpeckleDynamo
       SpeckleObjects = new List<SpeckleObject>();
       ConvertedObjects = new List<object>();
       //remove all old ports
-      _context.Post(UpdateOutputStructure, "");
+      this.DispatchOnUIThread(() => UpdateOutputStructure());
       //for (var i = OutPorts.Count - 1; i >= 0; i--)
       //  OutPorts.RemoveAt(i);
       //_registeringPorts = true;
