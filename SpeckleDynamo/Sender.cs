@@ -261,7 +261,7 @@ namespace SpeckleDynamo
       Message = "Initialising...";
       var myForm = new SpecklePopup.MainWindow();
       myForm.Owner = Application.Current.MainWindow;
-      Application.Current.Dispatcher.BeginInvoke((Action)(() =>
+      this.DispatchOnUIThread(() =>
       {
         //if default account exists form is closed automatically
         if (!myForm.HasDefaultAccount)
@@ -280,11 +280,10 @@ namespace SpeckleDynamo
         }
         else
         {
-          throw new WarningException("Account selection failed.");
           Message = "";
-          return;
+          throw new WarningException("Account selection failed.");
         }
-      }));
+      });
     }
 
     private void InitializeSender(bool init)
@@ -506,26 +505,24 @@ namespace SpeckleDynamo
 
     protected override void AddInput()
     {
-      //_updatingPorts = 3;
       InPorts.Add(new PortModel(PortType.Input, this, new PortData(GetSequence().ElementAt(InPorts.Count), "")));
       Inputs.Add(new InputName(InPorts.Last().Name));
       //base.AddInput();
 
-      if (DataSender != null)
-        ExpireNode();
+      if (MetadataSender != null)
+        UpdateMetadata();
     }
 
     protected override void RemoveInput()
     {
-      //_updatingPorts = 3;
       if (InPorts.Count > 1)
       {
         base.RemoveInput();
         Inputs.RemoveAt(Inputs.Count - 1);
       }
 
-      if (DataSender != null)
-        ExpireNode();
+      if (MetadataSender != null)
+        UpdateMetadata();
     }
 
     public override bool IsConvertible

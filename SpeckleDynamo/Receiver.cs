@@ -106,8 +106,6 @@ namespace SpeckleDynamo
             ChangeStreams(StreamId);
           }
         }
-       
-       
       }
       catch (Exception ex)
       {
@@ -136,8 +134,14 @@ namespace SpeckleDynamo
         var associativeNodes = new List<AssociativeNode>();
         foreach (Layer layer in Layers)
         {
-
-          subset = ConvertedObjects.GetRange((int)layer.StartIndex, (int)layer.ObjectCount);
+          try
+          {
+            subset = ConvertedObjects.GetRange((int)layer.StartIndex, (int)layer.ObjectCount);
+          }
+          catch(Exception e)
+          {
+            Console.WriteLine(e);
+          }
           if (layer.Topology == "")
           {
             Functions.SpeckleTempData.AddLayerObjects(StreamId + layer.Guid, subset);
@@ -194,10 +198,10 @@ namespace SpeckleDynamo
           associativeNodes.Add(AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex((int)layer.OrderIndex), functionCall));
 
         }
-        
+        this.ClearErrorsAndWarnings();
         return associativeNodes;
       }
-      
+     
     }
 
     private void RecursivelyCreateNestedLists(List<object> tree, List<int> branchIndexes, int currentIndexPosition)
@@ -245,7 +249,7 @@ namespace SpeckleDynamo
       // we can safely omit the displayValue, since this is rhino!
       Message = "Getting objects";
 
-      var payload = getStream.Result.Resource.Objects.Where(o => !ObjectCache.ContainsKey(o._id)).Select(obj => obj._id).ToArray();
+      var payload = getStream.Result.Resource.Objects.Select(obj => obj._id).ToArray(); //.Where(o => !ObjectCache.ContainsKey(o._id)).
 
       myReceiver.ObjectGetBulkAsync(payload, "omit=displayValue").ContinueWith(tres =>
       {
@@ -272,7 +276,8 @@ namespace SpeckleDynamo
        
         //expire node on main thread
         hasNewData = true;
-       this.DispatchOnUIThread(() => { UpdateOutputStructure(); ExpireNode(); });
+       this.DispatchOnUIThread(() => { UpdateOutputStructure(); });
+       ExpireNode();
       });
     }
 
@@ -294,7 +299,7 @@ namespace SpeckleDynamo
       myReceiver.Stream.Children = result.Resource.Children;
     }
 
-    public void UpdateOutputStructure()
+    private void UpdateOutputStructure()
     {
       List<Layer> toRemove, toAdd, toUpdate;
       toRemove = new List<Layer>();
@@ -317,20 +322,21 @@ namespace SpeckleDynamo
         OutPorts.Add(new PortModel(PortType.Output, this, new PortData(layer.Name, layer.Guid)));
       }
 
-      foreach (var layer in toUpdate)
-      {
-        for (var i = 0; i < OutPorts.Count; i++)
-        {
-          if (OutPorts[i].ToolTip == layer.Guid)
-          {
-            OutPorts.RemoveAt(i);
-            OutPorts.Insert(i, new PortModel(PortType.Output, this, new PortData(layer.Name, layer.Guid)));
-            break;
-          }
-        }
-      }
+      //foreach (var layer in toUpdate)
+      //{
+      //  for (var i = 0; i < OutPorts.Count; i++)
+      //  {
+      //    if (OutPorts[i].ToolTip == layer.Guid)
+      //    {
+      //      OutPorts.RemoveAt(i);
+      //      OutPorts.Insert(i, new PortModel(PortType.Output, this, new PortData(layer.Name, layer.Guid)));
+      //      break;
+      //    }
+      //  }
+      //}
 
-      RegisterAllPorts();
+      if(toAdd.Count>0 || toRemove.Count>0)
+        RegisterAllPorts();
     }
 
     public void ExpireNode()
@@ -436,7 +442,7 @@ namespace SpeckleDynamo
 
       var myForm = new SpecklePopup.MainWindow();
       myForm.Owner = Application.Current.MainWindow;
-      Application.Current.Dispatcher.BeginInvoke((Action)(() =>
+      this.DispatchOnUIThread(() =>
       {
         //if default account exists form is closed automatically
         if (!myForm.HasDefaultAccount)
@@ -453,11 +459,10 @@ namespace SpeckleDynamo
         }
         else
         {
-          throw new WarningException("Account selection failed.");
           Message = "";
-          return;
+          throw new WarningException("Account selection failed.");
         }
-      }));
+      });
     }
 
     internal void PausePlayButtonClick(object sender, RoutedEventArgs e)
