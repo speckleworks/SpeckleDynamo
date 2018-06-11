@@ -418,7 +418,7 @@ namespace SpeckleDynamo
       //baseProps["angleTolerance"] = Rhino.RhinoDoc.ActiveDoc.ModelAngleToleranceRadians;
       //updateStream.BaseProperties = baseProps;
 
-      var response = mySender.StreamUpdateAsync(mySender.StreamId, updateStream);
+      var response = mySender.StreamUpdateAsync(mySender.StreamId, updateStream).Result;
 
       mySender.BroadcastMessage(new { eventType = "update-global" });
 
@@ -430,7 +430,7 @@ namespace SpeckleDynamo
         l++;
       }
 
-      Log += response.Result.Message;
+      Log += response.Message;
       Message = "Data sent\n@" + DateTime.Now.ToString("HH:mm:ss");
 
     }
