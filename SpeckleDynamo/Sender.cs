@@ -100,7 +100,7 @@ namespace SpeckleDynamo
       }
       catch (Exception ex)
       {
-        throw new WarningException("Inputs are not formatted correctly");
+        Warning("Inputs are not formatted correctly");
       }
 
     }
@@ -111,10 +111,10 @@ namespace SpeckleDynamo
       this.ClearErrorsAndWarnings();
 
       if (_registeringPorts)
-        return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
+        return Enumerable.Empty<AssociativeNode>();
 
       if (mySender == null || Log == null)
-        return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
+        return Enumerable.Empty<AssociativeNode>();
 
       var associativeNodes = new List<AssociativeNode> {
                      AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildStringNode(Log)),
@@ -224,7 +224,7 @@ namespace SpeckleDynamo
       }
       catch (Exception e)
       {
-        throw e;
+        Warning(e.Message);
       }
     }
 
@@ -281,7 +281,7 @@ namespace SpeckleDynamo
         else
         {
           Message = "";
-          throw new WarningException("Account selection failed.");
+          Error("Account selection failed.");
         }
       });
     }
@@ -316,7 +316,7 @@ namespace SpeckleDynamo
         this.Log += DateTime.Now.ToString("dd:HH:mm:ss ") + e.EventData + "\n";
         if (e.EventName == "websocket-disconnected")
           return;
-        throw new WarningException(e.EventName + ": " + e.EventData);
+        Warning(e.EventName + ": " + e.EventData);
       };
       //TODO: check this
       //ExpireComponentAction = () => ExpireSolution(true);
@@ -384,7 +384,7 @@ namespace SpeckleDynamo
 
       if (objectUpdatePayloads.Count > 100)
       {
-        throw new WarningException("This is a humongous update, in the range of ~50mb. For now, create more streams instead of just one massive one! Updates will be faster and snappier, and you can combine them back together at the other end easier.");
+        Warning("This is a humongous update, in the range of ~50mb. For now, create more streams instead of just one massive one! Updates will be faster and snappier, and you can combine them back together at the other end easier.");
       }
 
       int k = 0;
@@ -505,9 +505,9 @@ namespace SpeckleDynamo
 
     protected override void AddInput()
     {
-      InPorts.Add(new PortModel(PortType.Input, this, new PortData(GetSequence().ElementAt(InPorts.Count), "")));
+      var name = GetSequence().ElementAt(InPorts.Count);
+      InPorts.Add(new PortModel(PortType.Input, this, new PortData(name, "Layer "+ name)));
       Inputs.Add(new InputName(InPorts.Last().Name));
-      //base.AddInput();
 
       if (MetadataSender != null)
         UpdateMetadata();

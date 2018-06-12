@@ -1,12 +1,13 @@
-﻿using Dynamo.Graph.Connectors;
-using Dynamo.Graph.Nodes;
+﻿using Dynamo.Graph.Nodes;
 using Newtonsoft.Json;
 using ProtoCore.AST.AssociativeAST;
-using SpeckleCore;
-using System;
 using System.Collections.Generic;
+using Dynamo.Utilities;
+using System;
+using System.Linq;
 
-namespace SpeckleDynamo
+
+namespace Test
 {
   [NodeName("Test")]
   [NodeDescription("Tetst.")]
@@ -17,8 +18,6 @@ namespace SpeckleDynamo
 
   public class Test : VariableInputNode
   {
-    public SpeckleApiClient myReceiver;
-    private bool _registeringPorts = false;
 
     [JsonConstructor]
     private Test(IEnumerable<PortModel> inPorts, IEnumerable<PortModel> outPorts) : base(inPorts, outPorts)
@@ -29,53 +28,42 @@ namespace SpeckleDynamo
     public Test()
     {
       InPorts.Add(new PortModel(PortType.Input, this, new PortData("In", "")));
+      //OutPorts.Add(new PortModel(PortType.Output, this, new PortData("out" + (1), "")));
+      //OutPorts.Add(new PortModel(PortType.Output, this, new PortData("out" + (2), "")));
+      //OutPorts.Add(new PortModel(PortType.Output, this, new PortData("out" + (3), "")));
       RegisterAllPorts();
-
-      ArgumentLacing = LacingStrategy.Disabled;
-
-      myReceiver = new SpeckleApiClient("https://hestia.speckle.works/api/v1", true);
-
-      InitReceiverEventsAndGlobals();
-
-      //TODO: get documentname and guid, not sure how... Maybe with an extension?
-      myReceiver.IntializeReceiver("H1oKSCveQ", "none", "Dynamo", "none", "JWT eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1YWQ0YWUxYzIyN2ZlNTExMGQ2Njc0ZWMiLCJpYXQiOjE1MjM4ODc2NDQsImV4cCI6MTU4NzAwMjg0NH0.Kjw-8p2meT2zkCV5ctkGMpqL4VZ6mK_DXLO4XWyMj7w");
     }
 
-    internal void InitReceiverEventsAndGlobals()
+    protected override void AddInput()
     {
-     
+      var ports = OutPorts.Count;
+      OutPorts.RemoveAll((p) => { return true; });
 
-
-      myReceiver.OnWsMessage += OnWsMessage;
-
-     
-
+      for (var i = 0; i < ports + 1; i++)
+        OutPorts.Add(new PortModel(PortType.Output, this, new PortData("out" + i, "")));
+       RegisterAllPorts();
     }
 
-    public virtual void OnWsMessage(object source, SpeckleEventArgs e)
+    protected override void RemoveInput()
     {
-      Console.WriteLine(e);
+      //var t = Task.Run(() => OnNodeModified(true));
+      //this.BuildOutputAst(new List<AssociativeNode>() {AstFactory.BuildNullNode() });
+      
+        OnNodeModified(true);
     }
 
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
 
-      if(_registeringPorts)
-        return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
-
       var associativeNodes = new List<AssociativeNode>();
       for (var i = 0; i < OutPorts.Count; i++)
       {
-        associativeNodes.Add(AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(i), inputAstNodes[0]));
+        associativeNodes.Add(AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(i), 
+          AstFactory.BuildStringNode((DateTime.Now.ToLongTimeString()))));
       }
       return associativeNodes;
     }
 
-    protected override void AddInput()
-    {
-      OutPorts.Add(new PortModel(PortType.Output, this, new PortData("out" + (OutPorts.Count + 1), "")));
-      RegisterAllPorts();
-    }
 
     protected override string GetInputName(int index)
     {
@@ -84,17 +72,7 @@ namespace SpeckleDynamo
 
     protected override string GetInputTooltip(int index)
     {
-      return "Layer " + InPorts[index].Name;
-    }
-
-    public override bool IsConvertible
-    {
-      get { return true; }
-    }
-
-    protected override void OnConnectorAdded(ConnectorModel obj)
-    {
-      base.OnConnectorAdded(obj);
+      return "item" + index;
     }
   }
 }

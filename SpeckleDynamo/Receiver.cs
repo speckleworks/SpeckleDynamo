@@ -36,7 +36,7 @@ namespace SpeckleDynamo
     private string _email;
     private string _server;
     private string _streamId;
-    
+
     private string _message = "Initialising...";
     private bool _paused = false;
     private bool _streamTextBoxEnabled = true;
@@ -63,7 +63,7 @@ namespace SpeckleDynamo
     [JsonIgnore]
     public string Message { get => _message; set { _message = value; NotifyPropertyChanged("Message"); } }
     public bool Paused { get => _paused; set { _paused = value; NotifyPropertyChanged("Paused"); NotifyPropertyChanged("Receiving"); } }
-    public bool StreamTextBoxEnabled { get => _streamTextBoxEnabled; set { _streamTextBoxEnabled = value; NotifyPropertyChanged("StreamTextBoxEnabled");  } }
+    public bool StreamTextBoxEnabled { get => _streamTextBoxEnabled; set { _streamTextBoxEnabled = value; NotifyPropertyChanged("StreamTextBoxEnabled"); } }
     [JsonConverter(typeof(SpeckleClientConverter))]
     public SpeckleApiClient myReceiver;
     #endregion
@@ -88,7 +88,7 @@ namespace SpeckleDynamo
       {
 
         //ID disconnected
-        if (!InPorts[0].Connectors.Any() && !StreamTextBoxEnabled && StreamId!=null)
+        if (!InPorts[0].Connectors.Any() && !StreamTextBoxEnabled && StreamId != null)
         {
           StreamTextBoxEnabled = true;
           StreamId = "";
@@ -96,7 +96,7 @@ namespace SpeckleDynamo
           return;
         }
         //ID connected
-        else if (InPorts[0].Connectors.Any() && obj!=null)
+        else if (InPorts[0].Connectors.Any() && obj != null)
         {
           StreamTextBoxEnabled = false;
           var newStreamID = (string)obj;
@@ -109,7 +109,7 @@ namespace SpeckleDynamo
       }
       catch (Exception ex)
       {
-        throw new WarningException("Inputs are not formatted correctly");
+        Warning("Inputs are not formatted correctly");
       }
     }
 
@@ -124,12 +124,12 @@ namespace SpeckleDynamo
                           AstFactory.BuildIdentifier(AstIdentifierBase + "_dummy"),
                           VMDataBridge.DataBridge.GenerateBridgeDataAst(GUID.ToString(), inputAstNodes[0])) };
       }
-      else 
+      else
       {
         Message = "Got data\n@" + DateTime.Now.ToString("HH:mm:ss");
         hasNewData = false;
         if (Layers == null || ConvertedObjects.Count == 0)
-          return new[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildNullNode()) };
+          return Enumerable.Empty<AssociativeNode>();
 
         var associativeNodes = new List<AssociativeNode>();
         foreach (Layer layer in Layers)
@@ -138,7 +138,7 @@ namespace SpeckleDynamo
           {
             subset = ConvertedObjects.GetRange((int)layer.StartIndex, (int)layer.ObjectCount);
           }
-          catch(Exception e)
+          catch (Exception e)
           {
             Console.WriteLine(e);
           }
@@ -178,7 +178,7 @@ namespace SpeckleDynamo
               else
                 output = tree[0];
             }
-             
+
             else
               output = tree;
 
@@ -198,10 +198,9 @@ namespace SpeckleDynamo
           associativeNodes.Add(AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex((int)layer.OrderIndex), functionCall));
 
         }
-        this.ClearErrorsAndWarnings();
         return associativeNodes;
       }
-     
+
     }
 
     private void RecursivelyCreateNestedLists(List<object> tree, List<int> branchIndexes, int currentIndexPosition)
@@ -272,15 +271,13 @@ namespace SpeckleDynamo
 
         this.Message = "Updating...";
 
-
-       
         //expire node on main thread
         hasNewData = true;
-       this.DispatchOnUIThread(() => { UpdateOutputStructure(); });
-       ExpireNode();
+        UpdateOutputStructure();
+        ExpireNode();
       });
     }
-
+   
 
 
     public virtual void UpdateMeta()
@@ -289,8 +286,8 @@ namespace SpeckleDynamo
 
       this.Name = result.Resource.Name;
       Layers = result.Resource.Layers.ToList();
-      //run on main thread
-      this.DispatchOnUIThread(() => UpdateOutputStructure());
+
+      UpdateOutputStructure();
     }
 
     public virtual void UpdateChildren()
@@ -301,42 +298,45 @@ namespace SpeckleDynamo
 
     private void UpdateOutputStructure()
     {
-      List<Layer> toRemove, toAdd, toUpdate;
-      toRemove = new List<Layer>();
-      toAdd = new List<Layer>();
-      toUpdate = new List<Layer>();
 
-      Layer.DiffLayerLists(OldLayers, Layers, ref toRemove, ref toAdd, ref toUpdate);
-      OldLayers = Layers;
-
-      foreach (Layer layer in toRemove)
+      this.DispatchOnUIThread(() =>
       {
-        var port = OutPorts.FirstOrDefault(item => { return item.Name == layer.Name; });
+        List<Layer> toRemove, toAdd, toUpdate;
+        toRemove = new List<Layer>();
+        toAdd = new List<Layer>();
+        toUpdate = new List<Layer>();
 
-        if (port != null)
-          OutPorts.Remove(port);
-      }
+        Layer.DiffLayerLists(OldLayers, Layers, ref toRemove, ref toAdd, ref toUpdate);
+        OldLayers = Layers;
 
-      foreach (var layer in toAdd)
-      {
-        OutPorts.Add(new PortModel(PortType.Output, this, new PortData(layer.Name, layer.Guid)));
-      }
+        foreach (Layer layer in toRemove)
+        {
+          var port = OutPorts.FirstOrDefault(item => { return item.Name == layer.Name; });
 
-      //foreach (var layer in toUpdate)
-      //{
-      //  for (var i = 0; i < OutPorts.Count; i++)
-      //  {
-      //    if (OutPorts[i].ToolTip == layer.Guid)
-      //    {
-      //      OutPorts.RemoveAt(i);
-      //      OutPorts.Insert(i, new PortModel(PortType.Output, this, new PortData(layer.Name, layer.Guid)));
-      //      break;
-      //    }
-      //  }
-      //}
+          if (port != null)
+            OutPorts.Remove(port);
+        }
 
-      if(toAdd.Count>0 || toRemove.Count>0)
+        foreach (var layer in toAdd)
+        {
+          OutPorts.Add(new PortModel(PortType.Output, this, new PortData(layer.Name, layer.Guid)));
+        }
+        //can't rename ports, so no need for this
+        //foreach (var layer in toUpdate)
+        //{
+        //  for (var i = 0; i < OutPorts.Count; i++)
+        //  {
+        //    if (OutPorts[i].ToolTip == layer.Guid)
+        //    {
+        //      OutPorts.RemoveAt(i);
+        //      OutPorts.Insert(i, new PortModel(PortType.Output, this, new PortData(layer.Name, layer.Guid)));
+        //      break;
+        //    }
+        //  }
+        //}
+
         RegisterAllPorts();
+      });
     }
 
     public void ExpireNode()
@@ -350,7 +350,9 @@ namespace SpeckleDynamo
         };
       }
       else
+      {
         OnNodeModified(true);
+      }
     }
 
     internal void InitReceiverEventsAndGlobals()
@@ -368,7 +370,7 @@ namespace SpeckleDynamo
         {
           UpdateGlobal();
         }
-          
+
       };
 
       myReceiver.OnWsMessage += OnWsMessage;
@@ -377,7 +379,7 @@ namespace SpeckleDynamo
       {
         if (e.EventName == "websocket-disconnected")
           return;
-        throw new WarningException(e.EventName + ": " + e.EventData);
+        Warning(e.EventName + ": " + e.EventData);
       };
 
     }
@@ -398,7 +400,7 @@ namespace SpeckleDynamo
       if (myReceiver != null)
         myReceiver.Dispose(true);
 
-      if(StreamId == "")
+      if (StreamId == "")
       {
         ResetReceiver();
         return;
@@ -419,7 +421,7 @@ namespace SpeckleDynamo
       SpeckleObjects = new List<SpeckleObject>();
       ConvertedObjects = new List<object>();
       //remove all old ports
-      this.DispatchOnUIThread(() => UpdateOutputStructure());
+      this.DispatchOnUIThread(() => OutPorts.RemoveAll((p) => { return true; }));
       //for (var i = OutPorts.Count - 1; i >= 0; i--)
       //  OutPorts.RemoveAt(i);
       //_registeringPorts = true;
@@ -460,7 +462,7 @@ namespace SpeckleDynamo
         else
         {
           Message = "";
-          throw new WarningException("Account selection failed.");
+          Error("Account selection failed.");
         }
       });
     }
