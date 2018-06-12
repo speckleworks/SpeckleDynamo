@@ -40,7 +40,6 @@ namespace SpeckleDynamo
     private string _message = "Initialising...";
     private bool _paused = false;
     private bool _streamTextBoxEnabled = true;
-    private bool _coldStart = false;
     private int elCount = 0;
     private int subsetCount = 0;
     private List<object> subset = new List<object>();
@@ -341,18 +340,7 @@ namespace SpeckleDynamo
 
     public void ExpireNode()
     {
-      if (_coldStart)
-      {
-        var coldStart = new System.Timers.Timer(2000) { AutoReset = false, Enabled = true };
-        coldStart.Elapsed += (sender, e) =>
-        {
-          OnNodeModified(true);
-        };
-      }
-      else
-      {
         OnNodeModified(true);
-      }
     }
 
     internal void InitReceiverEventsAndGlobals()
@@ -363,15 +351,14 @@ namespace SpeckleDynamo
 
       ConvertedObjects = new List<object>();
 
-      myReceiver.OnReady += (sender, e) =>
-      {
-        //could be paused if saved receiver
-        if (!Paused)
+      if(myReceiver.IsConnected && !Paused)
+        UpdateGlobal();
+      else
+        myReceiver.OnReady += (sender, e) =>
         {
-          UpdateGlobal();
-        }
-
-      };
+          if (!Paused)
+            UpdateGlobal();
+        };
 
       myReceiver.OnWsMessage += OnWsMessage;
 
@@ -420,13 +407,7 @@ namespace SpeckleDynamo
       ObjectCache = new Dictionary<string, SpeckleObject>();
       SpeckleObjects = new List<SpeckleObject>();
       ConvertedObjects = new List<object>();
-      //remove all old ports
       this.DispatchOnUIThread(() => OutPorts.RemoveAll((p) => { return true; }));
-      //for (var i = OutPorts.Count - 1; i >= 0; i--)
-      //  OutPorts.RemoveAt(i);
-      //_registeringPorts = true;
-      //RegisterAllPorts();
-      //_registeringPorts = false;
       Message = "";
       Name = "Speckle Receiver";
     }
@@ -436,6 +417,7 @@ namespace SpeckleDynamo
       //saved receiver
       if (myReceiver != null)
       {
+        this.DispatchOnUIThread(() => OutPorts.RemoveAll((p) => { return true; }));
         Message = "";
         AuthToken = Utils.Accounts.GetAuthToken(Email, RestApi);
         InitReceiverEventsAndGlobals();
@@ -573,7 +555,7 @@ namespace SpeckleDynamo
         if (subNode.Attributes == null || (subNode.Attributes.Count <= 0))
           continue;
 
-        _coldStart = true;
+       // _coldStart = true;
         foreach (XmlAttribute attr in subNode.Attributes)
         {
           switch (attr.Name)
