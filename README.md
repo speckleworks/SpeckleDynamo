@@ -1,11 +1,6 @@
----
-typora-copy-images-to: images
----
-
 # Speckle for Dynamo
 
-![speckle](images/speckle.gif)
-
+![speckle](https://user-images.githubusercontent.com/2679513/41541684-f1b7126e-730a-11e8-9738-369a20b0e76d.gif)
 
 
 Speckle for Dynamo ~~0.0.1~~ **0.0.2 Alpha** is out!
@@ -20,8 +15,7 @@ Speckle for Dynamo ~~0.0.1~~ **0.0.2 Alpha** is out!
 
 Install it from the package manager:
 
-![1529326850938](images/1529326850938.png)
-
+![1529326850938](https://user-images.githubusercontent.com/2679513/41541682-f16d9d50-730a-11e8-8d98-632ca20523ff.png)
 
 
 ## Usage
@@ -34,7 +28,8 @@ The **Receiver** lets you receive data from Speckle senders.
 
 **Speckle Accounts** lets you manage your Speckle accounts and set the default account for new nodes, it can be accessed from: View > Speckle Accounts
 
-![1529327886901](images/1529327886901.png)
+![1529327886901](https://user-images.githubusercontent.com/2679513/41541683-f199855a-730a-11e8-8b11-da7b5cc14a76.png)
+
 
 ## Bugs and feature requests
 
