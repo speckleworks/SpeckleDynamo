@@ -13,16 +13,16 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace SpeckleDynamo
+namespace SpeckleDynamo.UserControls
 {
-    /// <summary>
-    /// Interaction logic for SpeckleDynamoUserControl.xaml
-    /// </summary>
-    public partial class SpeckleDynamoUserControl : UserControl
+  /// <summary>
+  /// Interaction logic for ContextMenuItem.xaml
+  /// </summary>
+  public partial class ContextMenuItem : UserControl
+  {
+    public ContextMenuItem()
     {
-        public SpeckleDynamoUserControl()
-        {
-            InitializeComponent();
-        }
+      InitializeComponent();
     }
+  }
 }

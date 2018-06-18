@@ -9,8 +9,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SpeckleDynamo.Functions</RootNamespace>
     <AssemblyName>SpeckleDynamo.Functions</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -29,6 +30,57 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <!-- START MULTI VERSION CONFIGURATION -->
+  <!-- ADDING BUILD COFIGURATION FOR EACH VERSION, DEBUG AND RELEASE -->
+  <!-- 1.3 -->
+  <!--<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug-1.3|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug-1.3\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;Version1.3</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <StartAction>Program</StartAction>
+    <StartProgram>C:\Program Files\Dynamo\Dynamo Revit\1.3\DynamoSandbox.exe</StartProgram>
+    <DynamoVersion>1.3</DynamoVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release-1.3|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release-1.3\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DynamoVersion>1.3</DynamoVersion>
+  </PropertyGroup>-->
+  <!-- 2.0 -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug-2\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;Version2.0</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <StartAction>Program</StartAction>
+    <StartProgram>C:\Program Files\Dynamo\Dynamo Core\2\DynamoSandbox.exe</StartProgram>
+    <DynamoVersion>2.0</DynamoVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release-2.0\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DynamoVersion>2.0</DynamoVersion>
+  </PropertyGroup>
+  <!-- END MULTIVERSION CONFIGURATION -->
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -42,11 +94,14 @@
   <ItemGroup>
     <Compile Include="Functions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SpeckleTempData.cs" />
   </ItemGroup>
   <ItemGroup>
+    <!-- 2.0 -->
     <PackageReference Include="DynamoVisualProgramming.DynamoServices" IncludeAssets="build;compile">
-      <Version>1.3.0</Version>
+      <Version>2.0.1.5055</Version>
     </PackageReference>
+    <!-- END MULTIVERSION REFERENCES -->
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
