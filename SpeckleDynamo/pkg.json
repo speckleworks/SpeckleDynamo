@@ -3,9 +3,9 @@
   "file_hash": null,
   "name": "Speckle for Dynamo",
   "version": "0.0.1",
-  "description": "Aplha release of Speckle for Dynamo. \r\n\r\n IMPORTANT: \r\n\r\n The receiver node often shows a warning regardig a Dictionary.ByKeysValues operation failed. Pleae ignore that and report all other bugs/feature requests on github.",
+  "description": "Alpha release of Speckle for Dynamo. \r\n\r\n IMPORTANT: \r\n\r\n The receiver node often shows a warning regarding a Dictionary.ByKeysValues operation failed. Please ignore that and report all other bugs/feature requests on github.",
   "group": "Speckle",
-  "keywords": null,
+  "keywords": [ "speckle", "interoperability", "data", "exchange"],
   "dependencies": [],
   "contents": "",
   "engine_version": "2.0.1.5065",
@@ -15,7 +15,7 @@
   "repository_url": "https://github.com/speckleworks/SpeckleDynamo",
   "contains_binaries": true,
   "node_libraries": [
-    "SpeckleDynamo, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
-    "SpeckleDynamo.Functions, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
+    "SpeckleDynamo, Version=0.0.1.0, Culture=neutral, PublicKeyToken=null",
+    "SpeckleDynamo.Functions, Version=0.0.1.0, Culture=neutral, PublicKeyToken=null"
   ]
 }
