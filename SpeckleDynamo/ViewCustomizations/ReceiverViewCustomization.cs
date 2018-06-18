@@ -20,7 +20,6 @@ namespace SpeckleDynamo.ViewCustomizations
       ui.PausePlayButton.Click += _receiver.PausePlayButtonClick;
       ui.Stream.LostFocus += _receiver.Stream_LostFocus;
       nodeView.inputGrid.Children.Add(ui);
-
     }
 
     public void Dispose()

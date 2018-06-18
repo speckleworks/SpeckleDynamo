@@ -1,4 +1,5 @@
 ﻿using Dynamo.Graph;
+using Dynamo.Graph.Connectors;
 using Dynamo.Graph.Nodes;
 using Dynamo.Utilities;
 using Newtonsoft.Json;
@@ -36,7 +37,7 @@ namespace SpeckleDynamo
     private string _email;
     private string _server;
     private string _streamId;
-
+    private bool _registeringPorts = false;
     private string _message = "Initialising...";
     private bool _paused = false;
     private bool _streamTextBoxEnabled = true;
@@ -115,6 +116,8 @@ namespace SpeckleDynamo
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
       this.ClearErrorsAndWarnings();
+      if (_registeringPorts)
+        return Enumerable.Empty<AssociativeNode>();
       //probably means that the stream ID has changed
       if (!hasNewData)
       {
@@ -297,9 +300,6 @@ namespace SpeckleDynamo
 
     private void UpdateOutputStructure()
     {
-
-      this.DispatchOnUIThread(() =>
-      {
         List<Layer> toRemove, toAdd, toUpdate;
         toRemove = new List<Layer>();
         toAdd = new List<Layer>();
@@ -308,39 +308,62 @@ namespace SpeckleDynamo
         Layer.DiffLayerLists(OldLayers, Layers, ref toRemove, ref toAdd, ref toUpdate);
         OldLayers = Layers;
 
-        foreach (Layer layer in toRemove)
-        {
-          var port = OutPorts.FirstOrDefault(item => { return item.Name == layer.Name; });
+        if (toRemove.Count == 0 && toAdd.Count == 0)
+          return;
 
-          if (port != null)
-            OutPorts.Remove(port);
-        }
+      this.DispatchOnUIThread(() =>
+      {
 
-        foreach (var layer in toAdd)
+        _registeringPorts = true;
+       
+        //port was renamed, collect connectins and then try restore them
+        if(toRemove.Count == toAdd.Count && toRemove.Count == OutPorts.Count)
         {
-          OutPorts.Add(new PortModel(PortType.Output, this, new PortData(layer.Name, layer.Guid)));
+          //collect connections
+          List<List<PortModel>> endPorts = new List<List<PortModel>>();
+          foreach (var i in OutPorts)
+          {
+            endPorts.Add(new List<PortModel>());
+            foreach (var c in i.Connectors)
+              endPorts.Last().Add(c.End);
+          }
+          OutPorts.RemoveAll((p) => { return true; });
+          for (var i = 0; i < toAdd.Count; i++)
+          {
+            var layer = toAdd[i];
+            OutPorts.Add(new PortModel(PortType.Output, this, new PortData(layer.Name, layer.Guid)));
+            foreach (var e in endPorts[i])
+              OutPorts.Last().Connectors.Add(new ConnectorModel(OutPorts.Last(),e, Guid.NewGuid()));
+          }
         }
+        else
+        {
+          foreach (Layer layer in toRemove)
+          {
+            var port = OutPorts.FirstOrDefault(item => { return item.Name == layer.Name; });
+            if (port != null)
+              OutPorts.Remove(port);
+          }
+          foreach (var layer in toAdd)
+          {
+            OutPorts.Add(new PortModel(PortType.Output, this, new PortData(layer.Name, layer.Guid)));
+          }
+        }
+       
         //can't rename ports, so no need for this
         //foreach (var layer in toUpdate)
         //{
-        //  for (var i = 0; i < OutPorts.Count; i++)
-        //  {
-        //    if (OutPorts[i].ToolTip == layer.Guid)
-        //    {
-        //      OutPorts.RemoveAt(i);
-        //      OutPorts.Insert(i, new PortModel(PortType.Output, this, new PortData(layer.Name, layer.Guid)));
-        //      break;
-        //    }
-        //  }
+         //...
         //}
 
         RegisterAllPorts();
+        _registeringPorts =false;
       });
     }
 
     public void ExpireNode()
     {
-        OnNodeModified(true);
+        OnNodeModified(forceExecute: true);
     }
 
     internal void InitReceiverEventsAndGlobals()
@@ -425,7 +448,8 @@ namespace SpeckleDynamo
       }
 
       var myForm = new SpecklePopup.MainWindow();
-      myForm.Owner = Application.Current.MainWindow;
+      //TODO: fix this it's crashing revit
+      //myForm.Owner = Application.Current.MainWindow;
       this.DispatchOnUIThread(() =>
       {
         //if default account exists form is closed automatically
