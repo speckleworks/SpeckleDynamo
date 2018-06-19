@@ -9,6 +9,7 @@ Speckle for Dynamo ~~0.0.1~~ **0.0.2 Alpha** is out!
 
 **The Receiver will often show a warning regarding `Dictionary.ByKeysValues operation failed`. [We are aware of that](https://github.com/speckleworks/SpeckleDynamo/issues/20) and are working with the Dynamo team to fix it. Nothing to worry about for the moment!**
 
+A list of currently supported geometry types can be found here: https://github.com/speckleworks/SpeckleDynamo/issues/10
 
 
 ## Installation
