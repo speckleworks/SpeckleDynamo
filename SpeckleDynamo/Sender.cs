@@ -1,6 +1,7 @@
 ﻿using Dynamo.Graph;
 using Dynamo.Graph.Connectors;
 using Dynamo.Graph.Nodes;
+using Dynamo.Utilities;
 using Newtonsoft.Json;
 using ProtoCore.AST.AssociativeAST;
 using SpeckleCore;
@@ -260,7 +261,7 @@ namespace SpeckleDynamo
 
       Message = "Initialising...";
       var myForm = new SpecklePopup.MainWindow();
-      myForm.Owner = Application.Current.MainWindow;
+     // myForm.Owner = Application.Current.MainWindow;
       this.DispatchOnUIThread(() =>
       {
         //if default account exists form is closed automatically
@@ -483,10 +484,7 @@ namespace SpeckleDynamo
           foreach(var c in i.Connectors)
             startPorts.Last().Add(c.Start);
         }
-
-        //remove all old ports
-        for (var i = InPorts.Count-1; i >= 0; i--)
-          InPorts.RemoveAt(i);
+        InPorts.RemoveAll((p) => { return true; });
 
         //add new ports and old connections
         for (var i = 0; i < Inputs.Count; i++)
@@ -496,9 +494,8 @@ namespace SpeckleDynamo
             InPorts.Last().Connectors.Add(new ConnectorModel(s,InPorts.Last(),Guid.NewGuid()));
         }       
         RegisterAllPorts();
-        _registeringPorts = false;
-        //since I cannot name ports the node needs to be expired
-        ExpireNode();
+        _registeringPorts = false;;
+        UpdateMetadata();
       }
 
     }
