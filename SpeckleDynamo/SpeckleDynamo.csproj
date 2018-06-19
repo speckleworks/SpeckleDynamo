@@ -266,11 +266,9 @@
     <!-- Generate customization dll -->
     <GenerateResource UseSourcePath="true" Sources="$(ProjectDir)\SpeckleDynamoImages.resx" OutputResources="$(ProjectDir)\SpeckleDynamoImages.resources" References="$(FrameworkAssembliesPath)System.Drawing.dll" />
     <AL TargetType="library" EmbedResources="$(ProjectDir)\SpeckleDynamoImages.resources" OutputAssembly="$(OutDir)SpeckleDynamo.customization.dll" Version="%(AssemblyInfo.Version)" />
-    <!-- If debugging, copy package to the Dynamo folder-->
-    <CallTarget Condition="'$(Configuration)' == 'Debug'  Or '$(Configuration)' == 'Debug-1.3' Or '$(Configuration)' == 'Debug-2.0' " Targets="AfterBuildDebug" />
-    <CallTarget Condition="'$(Configuration)' == 'Release'" Targets="AfterBuildRelease" />
+    <CallTarget Targets="PackageDirectoryBuild" />
   </Target>
-  <Target Name="AfterBuildDebug">
+  <Target Name="PackageDirectoryBuild">
     <ItemGroup>
       <SourceDlls Include="$(TargetDir)*.dll" Exclude="$(TargetDir)*Newtonsoft.Json.dll" />
       <SourcePdbs Include="$(TargetDir)*.pdb" />
@@ -282,23 +280,13 @@
     <Copy SourceFiles="@(SourcePdbs)" DestinationFolder="$(TargetDir)\$(ProjectName)\bin\" />
     <Copy SourceFiles="@(SourcePkg)" DestinationFolder="$(TargetDir)\$(ProjectName)" />
     <Copy SourceFiles="@(SourceExtension)" DestinationFolder="$(TargetDir)\$(ProjectName)\extra" />
-    <!--Copying to Packages Folder-->
-    <Copy SourceFiles="@(SourceDlls)" DestinationFolder="$(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(ProjectName)\bin\" />
-    <Copy SourceFiles="@(SourcePdbs)" DestinationFolder="$(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(ProjectName)\bin\" />
-    <Copy SourceFiles="@(SourcePkg)" DestinationFolder="$(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(ProjectName)" />
-    <Copy SourceFiles="@(SourceExtension)" DestinationFolder="$(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(ProjectName)\extra" />
+    <CallTarget Condition="'$(Configuration)' == 'Debug'" Targets="PackageDeploy" />
   </Target>
-  <Target Name="AfterBuildRelease">
+  <Target Name="PackageDeploy">
     <ItemGroup>
-      <SourceDlls Include="$(TargetDir)*.dll" Exclude="$(TargetDir)*Newtonsoft.Json.dll" />
-      <SourcePdbs Include="$(TargetDir)*.pdb" />
-      <SourcePkg Include="$(ProjectDir)pkg.json" />
-      <SourceExtension Include="$(TargetDir)$(ProjectName)Extension_ViewExtensionDefinition.xml" />
+      <SourcePackage Include="$(TargetDir)\$(ProjectName)\**\*" />
     </ItemGroup>
-    <!--Copying to Build Folder-->
-    <Copy SourceFiles="@(SourceDlls)" DestinationFolder="$(TargetDir)\$(ProjectName)\bin\" />
-    <Copy SourceFiles="@(SourcePdbs)" DestinationFolder="$(TargetDir)\$(ProjectName)\bin\" />
-    <Copy SourceFiles="@(SourcePkg)" DestinationFolder="$(TargetDir)\$(ProjectName)" />
-    <Copy SourceFiles="@(SourceExtension)" DestinationFolder="$(TargetDir)\$(ProjectName)\extra" />
+    <!--Copying to Package Folder-->
+    <Copy SourceFiles="@(SourcePackage)" DestinationFolder="$(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(ProjectName)\%(RecursiveDir)" />
   </Target>
 </Project>
