@@ -1,0 +1,31 @@
+# General Configuration
+version: 0.0.{build}
+
+# Environment Configuration
+image: Visual Studio 2017
+cache:
+  - '%LocalAppData%\NuGet\v3-cache'
+
+install:
+  #init and update submodules
+  - git submodule update --recursive --init
+
+
+# Build Configuration
+platform: Any CPU
+configuration: Release
+
+before_build:
+  - nuget restore
+
+build:
+  project: SpeckleDynamo.sln
+  verbosity: minimal
+
+after_build:
+  # zip everything into a zip file containing package folder structure
+  - 7z a SpeckleDynamo-$(appveyor_build_version).zip bin\$(configuration)\$(ProjectName)
+
+artifacts:
+  path: SpeckleDynamo-$(appveyor_build_version).zip
+  name: $(configuration)
