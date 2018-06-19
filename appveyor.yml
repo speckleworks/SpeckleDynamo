@@ -1,5 +1,5 @@
 # General Configuration
-version: {build}
+version: '{build}''
 
 # Environment Configuration
 image: Visual Studio 2017
