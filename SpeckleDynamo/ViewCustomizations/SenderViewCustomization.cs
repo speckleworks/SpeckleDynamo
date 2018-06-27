@@ -18,6 +18,13 @@ namespace SpeckleDynamo
     public void CustomizeView(Sender model, NodeView nodeView)
     {
       var ui = new SenderUi();
+      model.DocumentGuid = nodeView.ViewModel.DynamoViewModel.CurrentSpace.Guid.ToString();
+      model.DocumentName = nodeView.ViewModel.DynamoViewModel.CurrentSpace.Name;
+      if (Version.Parse(nodeView.ViewModel.DynamoViewModel.Version).CompareTo(new Version(2, 0)) < 0)
+      {
+        model.Error("Dynamo 2.0 or greater is required to run this package");
+        return;
+      }
       _sender = model;
 
       //bindings
@@ -38,31 +45,9 @@ namespace SpeckleDynamo
       inputs.DataContext = _sender;
       mi.Items.Add(inputs);
       nodeView.grid.ContextMenu.Items.Add(mi);
-
-      //wModel.InPorts.
-
     }
-
-
-
     public void Dispose()
     {
     }
-
-    //public static T GetChildOfType<T>(this DependencyObject depObj)
-    //where T : DependencyObject
-    //{
-    //  if (depObj == null) return null;
-
-    //  for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
-    //  {
-    //    var child = VisualTreeHelper.GetChild(depObj, i);
-
-    //    var result = (child as T) ?? GetChildOfType<T>(child);
-    //    if (result != null) return result;
-    //  }
-    //  return null;
-    //}
   }
-
 }

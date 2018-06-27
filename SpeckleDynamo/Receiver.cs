@@ -50,6 +50,8 @@ namespace SpeckleDynamo
     private List<object> ConvertedObjects;
     private bool hasNewData = false;
     private Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
+    public string DocumentName = "none";
+    public string DocumentGuid = "none";
     internal bool Receiving { get => !_paused; } //could instead use another value converter
     internal bool Expired = false;
     internal string AuthToken { get => _authToken; set { _authToken = value; NotifyPropertyChanged("AuthToken"); } }
@@ -86,7 +88,6 @@ namespace SpeckleDynamo
     {
       try
       {
-
         //ID disconnected
         if (!InPorts[0].Connectors.Any() && !StreamTextBoxEnabled && StreamId != null)
         {
@@ -116,6 +117,7 @@ namespace SpeckleDynamo
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
       this.ClearErrorsAndWarnings();
+
       if (_registeringPorts)
         return Enumerable.Empty<AssociativeNode>();
       //probably means that the stream ID has changed
@@ -419,9 +421,7 @@ namespace SpeckleDynamo
       myReceiver = new SpeckleApiClient(RestApi, true);
 
       InitReceiverEventsAndGlobals();
-
-      //TODO: get documentname and guid, not sure how... Maybe with an extension?
-      myReceiver.IntializeReceiver(StreamId, "none", "Dynamo", "none", AuthToken);
+      myReceiver.IntializeReceiver(StreamId, DocumentName, "Dynamo", DocumentGuid, AuthToken);
     }
 
     private void ResetReceiver()

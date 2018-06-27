@@ -45,6 +45,8 @@ namespace SpeckleDynamo
     private Dictionary<string, int> branches = new Dictionary<string, int>();
     private ObservableCollectionEx<InputName> _inputs = new ObservableCollectionEx<InputName> { new InputName("A"), new InputName("B"), new InputName("C") };
     internal Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
+    public string DocumentName = "none";
+    public string DocumentGuid = "none";
     internal string Log { get; set; }
     internal string AuthToken { get => _authToken; set { _authToken = value; NotifyPropertyChanged("AuthToken"); } }
 
@@ -290,7 +292,7 @@ namespace SpeckleDynamo
     private void InitializeSender(bool init)
     {
       if (init)
-        mySender.IntializeSender(AuthToken, "none", "Dynamo", "none").ContinueWith(task =>
+        mySender.IntializeSender(AuthToken, DocumentName, "Dynamo", DocumentGuid).ContinueWith(task =>
       {
         // ExpireNode();
       });
