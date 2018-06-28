@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Weavers>
+  <Costura>
+    <ExcludeAssemblies>
+      SpeckleDynamo.customization
+      SpeckleDynamo.Functions
+      SpeckleDynamoConverter
+      SpeckleDynamoExtension
+      SpecklePopup
+    </ExcludeAssemblies>
+  </Costura>
+</Weavers>
