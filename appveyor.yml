@@ -1,0 +1,41 @@
+# General Configuration
+version: '{build}'
+skip_branch_with_pr: true
+
+# Environment Configuration
+image: Visual Studio 2017
+cache:
+  - '%LocalAppData%\NuGet\v3-cache'
+
+install:
+  #init and update submodules
+  - git submodule update --recursive --init
+
+
+# Build Configuration
+platform: Any CPU
+configuration: Release
+
+before_build:
+  - nuget restore
+
+build:
+  project: SpeckleDynamo.sln
+  verbosity: minimal
+
+after_build:
+  # zip everything into a zip file containing package folder structure
+  - 7z a SpeckleDynamo-%APPVEYOR_BUILD_VERSION%.zip %APPVEYOR_BUILD_FOLDER%\SpeckleDynamo\bin\Release\SpeckleDynamo\*
+
+artifacts:
+  path: SpeckleDynamo-%APPVEYOR_BUILD_VERSION%.zip
+  name: Release
+
+notifications:
+- provider: Slack
+  incoming_webhook: https://hooks.slack.com/services/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
+  channel: '#devtalk'
+  template: Build <{{buildUrl}}|#{{buildVersion}}> (<{{commitUrl}}|{{commitId}}>) of {{repositoryName}}@{{branch}}) by {{commitAuthor}} {{status}} in {{duration}}
+  on_build_success: false
+  on_build_failure: true
+  on_build_status_changed: true

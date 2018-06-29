@@ -1,5 +1,7 @@
 # Speckle for Dynamo
 
+[![Build status](https://ci.appveyor.com/api/projects/status/lm4alrukr13lm027?svg=true)](https://ci.appveyor.com/project/SpeckleWorks/speckledynamo)
+
 ![speckle-demo](https://user-images.githubusercontent.com/2679513/41601159-99a0499a-73cf-11e8-90b9-36b43a822076.gif)
 
 Speckle for Dynamo ~~0.0.1~~ **0.0.2 Alpha** is out!
