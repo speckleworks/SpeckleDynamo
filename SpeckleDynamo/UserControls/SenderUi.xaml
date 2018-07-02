@@ -5,7 +5,6 @@
   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
   xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-
   mc:Ignorable="d">
   <UserControl.Resources>
     <ResourceDictionary>
@@ -35,21 +34,42 @@
       Grid.Row="0"
       HorizontalAlignment="Center"
       Orientation="Horizontal" />
-    <TextBox
-      Name="Stream"
-      Grid.Row="1"
-      Margin="5"
-      materialDesign:HintAssist.Hint="Stream ID"
-      IsReadOnly="true"
-      Style="{StaticResource MaterialDesignFloatingHintTextBox}"
-      Text="{Binding StreamId}" />
+    <Grid Grid.Row="1">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="auto" />
+      </Grid.ColumnDefinitions>
+      <TextBox
+        Name="Stream"
+        Margin="5"
+        materialDesign:HintAssist.Hint="Stream ID"
+        IsReadOnly="true"
+        Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+        Text="{Binding StreamId}" />
+      <Button
+        Grid.Column="1"
+        Width="20"
+        Height="20"
+        Margin="0,0,5,0"
+        Padding="2"
+        Background="#CBC6BE"
+        BorderThickness="0"
+        Click="Button_Click"
+        Content="{materialDesign:PackIcon ContentCopy}"
+        Foreground="#4C4B4A"
+        ToolTip="Copy Stream ID" />
+    </Grid>
+
     <Button
       Name="ForceSend"
       Grid.Row="2"
       Width="30"
       Height="30"
       Margin="5"
-      Style="{StaticResource MaterialDesignFloatingActionButton}"
+      materialDesign:ButtonProgressAssist.IsIndeterminate="{Binding Transmitting}"
+      materialDesign:ButtonProgressAssist.IsIndicatorVisible="{Binding Transmitting}"
+      materialDesign:ButtonProgressAssist.Value="-1"
+      Style="{StaticResource MaterialDesignFloatingActionDarkButton}"
       ToolTip="Force send">
       <Grid>
         <materialDesign:PackIcon

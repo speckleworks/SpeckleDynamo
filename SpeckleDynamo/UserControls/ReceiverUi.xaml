@@ -5,6 +5,7 @@
   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
   xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  d:DesignWidth="200"
   mc:Ignorable="d">
   <UserControl.Resources>
     <ResourceDictionary>
@@ -28,21 +29,44 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
-    <TextBox
-      Name="Stream"
-      Grid.Row="0"
-      Margin="5"
-      materialDesign:HintAssist.Hint="Stream ID"
-      IsEnabled="{Binding StreamTextBoxEnabled}"
-      Style="{StaticResource MaterialDesignFloatingHintTextBox}"
-      Text="{Binding StreamId}" />
+    <Grid Grid.Row="0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="auto" />
+      </Grid.ColumnDefinitions>
+      <TextBox
+        Name="Stream"
+        Grid.Column="0"
+        Margin="5"
+        materialDesign:HintAssist.Hint="Stream ID"
+        IsEnabled="{Binding StreamTextBoxEnabled}"
+        LostFocus="Stream_LostFocus"
+        Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+        Text="{Binding StreamId, UpdateSourceTrigger=PropertyChanged}" />
+      <Button
+        Grid.Column="1"
+        Width="20"
+        Height="20"
+        Margin="0,0,5,0"
+        Padding="2"
+        Background="#CBC6BE"
+        BorderThickness="0"
+        Click="Button_Click"
+        Content="{materialDesign:PackIcon ContentPaste}"
+        Foreground="#4C4B4A"
+        ToolTip="Icon" />
+    </Grid>
+
     <Button
       Name="PausePlayButton"
       Grid.Row="1"
       Width="30"
       Height="30"
       Margin="5"
-      Style="{StaticResource MaterialDesignFloatingActionButton}"
+      materialDesign:ButtonProgressAssist.IsIndeterminate="{Binding Transmitting}"
+      materialDesign:ButtonProgressAssist.IsIndicatorVisible="{Binding Transmitting}"
+      materialDesign:ButtonProgressAssist.Value="-1"
+      Style="{StaticResource MaterialDesignFloatingActionLightButton}"
       ToolTip="Pause/Resume receiving">
       <Grid>
         <materialDesign:PackIcon

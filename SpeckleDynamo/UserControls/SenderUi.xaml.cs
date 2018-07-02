@@ -13,5 +13,10 @@ namespace SpeckleDynamo.UserControls
     {
       InitializeComponent();
     }
+
+    private void Button_Click(object sender, RoutedEventArgs e)
+    {
+      Clipboard.SetText(Stream.Text);
+    }
   }
 }

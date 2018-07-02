@@ -26,7 +26,8 @@ namespace SpeckleDynamo.ViewCustomizations
       ui.DataContext = _receiver;
       ui.Loaded += _receiver.AddedToDocument;
       ui.PausePlayButton.Click += _receiver.PausePlayButtonClick;
-      ui.Stream.LostFocus += _receiver.Stream_LostFocus;
+      ui.StreamChanged += _receiver.StreamChanged;
+;
       nodeView.inputGrid.Children.Add(ui);
     }
 
