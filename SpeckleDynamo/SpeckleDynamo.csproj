@@ -107,17 +107,28 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Streams.cs" />
     <Compile Include="Receiver.cs" />
     <Compile Include="Test.cs" />
     <Compile Include="Serialization\SpeckleClientConverter.cs" />
+    <Compile Include="UserControls\AutoCompleteComboBox.xaml.cs">
+      <DependentUpon>AutoCompleteComboBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\AutoCompleteComboBoxSetting.cs" />
     <Compile Include="UserControls\ContextMenuItem.xaml.cs">
       <DependentUpon>ContextMenuItem.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\StreamsUi.xaml.cs">
+      <DependentUpon>StreamsUi.xaml</DependentUpon>
     </Compile>
     <Compile Include="UserControls\SenderUi.xaml.cs">
       <DependentUpon>SenderUi.xaml</DependentUpon>
     </Compile>
     <Compile Include="Utils\Accounts.cs" />
     <Compile Include="Utils\ObservableCollectionEx.cs" />
+    <Compile Include="ValueConverters\BoolVisibConverter.cs" />
+    <Compile Include="ValueConverters\InverseBooleanConverter.cs" />
+    <Compile Include="ViewCustomizations\StreamsViewCustomization.cs" />
     <Compile Include="ViewCustomizations\ReceiverViewCustomization.cs" />
     <Compile Include="Sender.cs" />
     <Compile Include="ViewCustomizations\SenderViewCustomization.cs" />
@@ -206,9 +217,17 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="UserControls\AutoCompleteComboBox.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="UserControls\ContextMenuItem.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UserControls\StreamsUi.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="UserControls\SenderUi.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -250,6 +269,10 @@
     <Resource Include="FodyWeavers.xml">
       <SubType>Designer</SubType>
     </Resource>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\GenericIcon%40128.png" />
+    <Resource Include="Resources\GenericIcon%4032.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="AfterBuild">

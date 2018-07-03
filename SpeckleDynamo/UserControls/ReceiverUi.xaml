@@ -5,6 +5,7 @@
   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
   xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:src="clr-namespace:SpeckleDynamo.ValueConverters"
   d:DesignWidth="200"
   mc:Ignorable="d">
   <UserControl.Resources>
@@ -12,7 +13,8 @@
       <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="pack://application:,,,/SpeckleDynamo;component/Resources.xaml" />
       </ResourceDictionary.MergedDictionaries>
-      <BooleanToVisibilityConverter x:Key="BoolToVis" />
+      <src:BoolVisibConverter x:Key="BoolVisibConverter" />
+      <src:InverseBooleanConverter x:Key="InverseBooleanConverter" />
       <Style BasedOn="{StaticResource MaterialDesignRaisedButton}" TargetType="{x:Type Button}">
         <Setter Property="Margin" Value="0,8,0,8" />
       </Style>
@@ -21,7 +23,7 @@
       </Style>
     </ResourceDictionary>
   </UserControl.Resources>
-  <Grid>
+  <Grid IsEnabled="{Binding Transmitting, Converter={StaticResource InverseBooleanConverter}}">
     <Grid.ColumnDefinitions />
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
@@ -73,12 +75,12 @@
           Width="20"
           Height="24"
           Kind="Pause"
-          Visibility="{Binding Receiving, Converter={StaticResource BoolToVis}, FallbackValue=Visible}" />
+          Visibility="{Binding Paused, Converter={StaticResource BoolVisibConverter}, ConverterParameter='opposite', FallbackValue=Visible}" />
         <materialDesign:PackIcon
           Width="20"
           Height="24"
           Kind="Play"
-          Visibility="{Binding Paused, Converter={StaticResource BoolToVis}, FallbackValue=Hidden}" />
+          Visibility="{Binding Paused, Converter={StaticResource BoolVisibConverter}, FallbackValue=Hidden}" />
       </Grid>
     </Button>
     <Label

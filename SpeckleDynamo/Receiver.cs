@@ -61,7 +61,6 @@ namespace SpeckleDynamo
     public bool Transmitting { get => _transmitting; set { _transmitting = value; NotifyPropertyChanged("Transmitting"); } }
     public string DocumentName = "none";
     public string DocumentGuid = "none";
-    public bool Receiving { get => !_paused; } //could instead use another value converter
    
     public string OldStreamId;
     [JsonIgnore]

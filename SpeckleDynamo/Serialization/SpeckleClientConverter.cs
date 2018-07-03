@@ -62,9 +62,8 @@ namespace SpeckleDynamo.Serialization
           }
         }
       }
-      catch
-      {
-        return client;
+      catch  { 
+        // null/empty receiver  
       }
       return client;
     }
