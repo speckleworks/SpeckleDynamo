@@ -4,7 +4,7 @@
 
 ![speckle-demo](https://user-images.githubusercontent.com/2679513/41601159-99a0499a-73cf-11e8-90b9-36b43a822076.gif)
 
-Speckle for Dynamo ~~0.0.1~~ **0.0.2 Alpha** is out!
+Speckle for Dynamo **Alpha** is out! Get the latest version from the Dynamo Package Manager.
 
 **IMPORTANT:**
 
