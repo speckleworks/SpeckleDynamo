@@ -5,13 +5,16 @@
   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
   xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:src="clr-namespace:SpeckleDynamo.ValueConverters"
+  d:DesignWidth="200"
   mc:Ignorable="d">
   <UserControl.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="pack://application:,,,/SpeckleDynamo;component/Resources.xaml" />
       </ResourceDictionary.MergedDictionaries>
-      <BooleanToVisibilityConverter x:Key="BoolToVis" />
+      <src:BoolVisibConverter x:Key="BoolVisibConverter" />
+      <src:InverseBooleanConverter x:Key="InverseBooleanConverter" />
       <Style BasedOn="{StaticResource MaterialDesignRaisedButton}" TargetType="{x:Type Button}">
         <Setter Property="Margin" Value="0,8,0,8" />
       </Style>
@@ -20,7 +23,7 @@
       </Style>
     </ResourceDictionary>
   </UserControl.Resources>
-  <Grid>
+  <Grid IsEnabled="{Binding Transmitting, Converter={StaticResource InverseBooleanConverter}}">
     <Grid.ColumnDefinitions />
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
@@ -28,33 +31,56 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
-    <TextBox
-      Name="Stream"
-      Grid.Row="0"
-      Margin="5"
-      materialDesign:HintAssist.Hint="Stream ID"
-      IsEnabled="{Binding StreamTextBoxEnabled}"
-      Style="{StaticResource MaterialDesignFloatingHintTextBox}"
-      Text="{Binding StreamId}" />
+    <Grid Grid.Row="0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="auto" />
+      </Grid.ColumnDefinitions>
+      <TextBox
+        Name="Stream"
+        Grid.Column="0"
+        Margin="5"
+        materialDesign:HintAssist.Hint="Stream ID"
+        IsEnabled="{Binding StreamTextBoxEnabled}"
+        LostFocus="Stream_LostFocus"
+        Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+        Text="{Binding StreamId, UpdateSourceTrigger=PropertyChanged}" />
+      <Button
+        Grid.Column="1"
+        Width="20"
+        Height="20"
+        Margin="0,0,5,0"
+        Padding="2"
+        Background="#CBC6BE"
+        BorderThickness="0"
+        Click="Button_Click"
+        Content="{materialDesign:PackIcon ContentPaste}"
+        Foreground="#4C4B4A"
+        ToolTip="Paste Stream ID" />
+    </Grid>
+
     <Button
       Name="PausePlayButton"
       Grid.Row="1"
       Width="30"
       Height="30"
       Margin="5"
-      Style="{StaticResource MaterialDesignFloatingActionButton}"
+      materialDesign:ButtonProgressAssist.IsIndeterminate="{Binding Transmitting}"
+      materialDesign:ButtonProgressAssist.IsIndicatorVisible="{Binding Transmitting}"
+      materialDesign:ButtonProgressAssist.Value="-1"
+      Style="{StaticResource MaterialDesignFloatingActionLightButton}"
       ToolTip="Pause/Resume receiving">
       <Grid>
         <materialDesign:PackIcon
           Width="20"
           Height="24"
           Kind="Pause"
-          Visibility="{Binding Receiving, Converter={StaticResource BoolToVis}, FallbackValue=Visible}" />
+          Visibility="{Binding Paused, Converter={StaticResource BoolVisibConverter}, ConverterParameter='opposite', FallbackValue=Visible}" />
         <materialDesign:PackIcon
           Width="20"
           Height="24"
           Kind="Play"
-          Visibility="{Binding Paused, Converter={StaticResource BoolToVis}, FallbackValue=Hidden}" />
+          Visibility="{Binding Paused, Converter={StaticResource BoolVisibConverter}, FallbackValue=Hidden}" />
       </Grid>
     </Button>
     <Label

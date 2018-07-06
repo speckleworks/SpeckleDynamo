@@ -34,6 +34,7 @@ namespace SpeckleDynamo
     private string _email;
     private string _server;
     private string _streamId;
+    private bool _transmitting = true;
     private string _message = "Initialising...";
     private Timer MetadataSender, DataSender;
     private ArrayList DataBridgeData = new ArrayList();
@@ -45,6 +46,8 @@ namespace SpeckleDynamo
     private Dictionary<string, int> branches = new Dictionary<string, int>();
     private ObservableCollectionEx<InputName> _inputs = new ObservableCollectionEx<InputName> { new InputName("A"), new InputName("B"), new InputName("C") };
     internal Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
+    public string DocumentName = "none";
+    public string DocumentGuid = "none";
     internal string Log { get; set; }
     internal string AuthToken { get => _authToken; set { _authToken = value; NotifyPropertyChanged("AuthToken"); } }
 
@@ -53,6 +56,7 @@ namespace SpeckleDynamo
     public string Email { get => _email; set { _email = value; NotifyPropertyChanged("Email"); } }
     public string Server { get => _server; set { _server = value; NotifyPropertyChanged("Server"); } }
     public string StreamId { get => _streamId; set { _streamId = value; NotifyPropertyChanged("StreamId"); } }
+    public bool Transmitting { get => _transmitting; set { _transmitting = value; NotifyPropertyChanged("Transmitting"); } }
     [JsonIgnore]
     public string Message { get => _message; set { _message = value; NotifyPropertyChanged("Message"); } }
     [JsonIgnore]
@@ -121,17 +125,12 @@ namespace SpeckleDynamo
                      AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildStringNode(Log)),
                      AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(1), AstFactory.BuildStringNode(mySender.StreamId)) };
 
-      //if node expired just because a port was added/removed don't bother updating global
-      //if (_updatingPorts > 0)
-      //{
-      //  _updatingPorts--;
-      //  return associativeNodes;
-      //}
-
       if (InPorts.Count == 0)
         return associativeNodes;
 
       //using BridgeData to get value of input from within the node itself
+      Transmitting = true;
+      Message = "Sending...";
       associativeNodes.Add(AstFactory.BuildAssignment(
                         AstFactory.BuildIdentifier(AstIdentifierBase + "_dummy"),
                         VMDataBridge.DataBridge.GenerateBridgeDataAst(GUID.ToString(), AstFactory.BuildExprList(inputAstNodes))));
@@ -245,7 +244,10 @@ namespace SpeckleDynamo
 
     internal void ForceSendClick(object sender, RoutedEventArgs e)
     {
+      Transmitting = true;
+      Message = "Sending...";
       ExpireNode();
+
     }
 
     internal void AddedToDocument(object sender, System.EventArgs e)
@@ -283,6 +285,7 @@ namespace SpeckleDynamo
         {
           Message = "";
           Error("Account selection failed.");
+          Transmitting = false;
         }
       });
     }
@@ -290,7 +293,7 @@ namespace SpeckleDynamo
     private void InitializeSender(bool init)
     {
       if (init)
-        mySender.IntializeSender(AuthToken, "none", "Dynamo", "none").ContinueWith(task =>
+        mySender.IntializeSender(AuthToken, DocumentName, "Dynamo", DocumentGuid).ContinueWith(task =>
       {
         // ExpireNode();
       });
@@ -432,6 +435,7 @@ namespace SpeckleDynamo
 
       Log += response.Message;
       Message = "Data sent\n@" + DateTime.Now.ToString("HH:mm:ss");
+      Transmitting = false;
 
     }
 
@@ -439,7 +443,7 @@ namespace SpeckleDynamo
     {
       BucketName = this.Name;
       BucketLayers = this.GetLayers();
-      MetadataSender.Start();
+      MetadataSender.Start(); 
     }
 
     private void MetadataSender_Elapsed(object sender, ElapsedEventArgs e)
@@ -456,6 +460,7 @@ namespace SpeckleDynamo
 
       Log += updateResult.Message;
       mySender.BroadcastMessage(new { eventType = "update-meta" });
+      Transmitting = false;
     }
 
     public virtual void OnWsMessage(object source, SpeckleEventArgs e)
@@ -494,7 +499,8 @@ namespace SpeckleDynamo
             InPorts.Last().Connectors.Add(new ConnectorModel(s,InPorts.Last(),Guid.NewGuid()));
         }       
         RegisterAllPorts();
-        _registeringPorts = false;;
+        _registeringPorts = false;
+        Transmitting = true;
         UpdateMetadata();
       }
 

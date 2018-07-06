@@ -42,21 +42,28 @@ namespace SpeckleDynamo.Serialization
     {
       SpeckleApiClient client = null;
       var obj = JValue.Load(reader);
-      var bytes = (byte[])obj;
-      if (bytes!=null)
+      try
       {
-        using (MemoryStream input = new MemoryStream(bytes))
-        using (DeflateStream deflateStream = new DeflateStream(input, CompressionMode.Decompress))
-        using (MemoryStream output = new MemoryStream())
+        var bytes = (byte[])obj;
+
+        if (bytes != null)
         {
-          deflateStream.CopyTo(output);
-          deflateStream.Close();
-          output.Seek(0, SeekOrigin.Begin);
+          using (MemoryStream input = new MemoryStream(bytes))
+          using (DeflateStream deflateStream = new DeflateStream(input, CompressionMode.Decompress))
+          using (MemoryStream output = new MemoryStream())
+          {
+            deflateStream.CopyTo(output);
+            deflateStream.Close();
+            output.Seek(0, SeekOrigin.Begin);
 
-          BinaryFormatter bformatter = new BinaryFormatter();
-          client = (SpeckleApiClient)bformatter.Deserialize(output);
+            BinaryFormatter bformatter = new BinaryFormatter();
+            client = (SpeckleApiClient)bformatter.Deserialize(output);
 
+          }
         }
+      }
+      catch  { 
+        // null/empty receiver  
       }
       return client;
     }

@@ -1,7 +1,7 @@
 ﻿using Dynamo.Controls;
 using Dynamo.Wpf;
 using SpeckleDynamo.UserControls;
-using System.Windows.Controls;
+using System;
 
 namespace SpeckleDynamo.ViewCustomizations
 {
@@ -12,26 +12,27 @@ namespace SpeckleDynamo.ViewCustomizations
     public void CustomizeView(Receiver model, NodeView nodeView)
     {
       var ui = new ReceiverUi();
+      model.DocumentGuid = nodeView.ViewModel.DynamoViewModel.CurrentSpace.Guid.ToString();
+      model.DocumentName = nodeView.ViewModel.DynamoViewModel.CurrentSpace.Name;
+      if(Version.Parse(nodeView.ViewModel.DynamoViewModel.Version).CompareTo(new Version(2, 0)) < 0)
+      {
+        model.Error("Dynamo 2.0 or greater is required to run this package");
+        return;
+      }
+
       _receiver = model;
 
-      //bindings
+      //bindings   
       ui.DataContext = _receiver;
       ui.Loaded += _receiver.AddedToDocument;
       ui.PausePlayButton.Click += _receiver.PausePlayButtonClick;
-      ui.Stream.LostFocus += _receiver.Stream_LostFocus;
+      ui.StreamChanged += _receiver.StreamChanged;
+;
       nodeView.inputGrid.Children.Add(ui);
     }
 
     public void Dispose()
     {
     }
-
-    //private void ExpireNode(object sender, System.EventArgs e)
-    //{
-    //  _receiver.ExpireNode();
-    //}
-
-   
-
   }
 }

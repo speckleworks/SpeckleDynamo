@@ -37,6 +37,7 @@ namespace SpeckleDynamo
     private string _email;
     private string _server;
     private string _streamId;
+    private bool _transmitting;
     private bool _registeringPorts = false;
     private string _message = "Initialising...";
     private bool _paused = false;
@@ -50,15 +51,17 @@ namespace SpeckleDynamo
     private List<object> ConvertedObjects;
     private bool hasNewData = false;
     private Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
-    internal bool Receiving { get => !_paused; } //could instead use another value converter
-    internal bool Expired = false;
     internal string AuthToken { get => _authToken; set { _authToken = value; NotifyPropertyChanged("AuthToken"); } }
-
+    internal bool Expired = false;
     #region public properties
     public string RestApi { get => _restApi; set { _restApi = value; NotifyPropertyChanged("RestApi"); } }
     public string Email { get => _email; set { _email = value; NotifyPropertyChanged("Email"); } }
     public string Server { get => _server; set { _server = value; NotifyPropertyChanged("Server"); } }
     public string StreamId { get => _streamId; set { _streamId = value; NotifyPropertyChanged("StreamId"); } }
+    public bool Transmitting { get => _transmitting; set { _transmitting = value; NotifyPropertyChanged("Transmitting"); } }
+    public string DocumentName = "none";
+    public string DocumentGuid = "none";
+   
     public string OldStreamId;
     [JsonIgnore]
     public string Message { get => _message; set { _message = value; NotifyPropertyChanged("Message"); } }
@@ -78,7 +81,7 @@ namespace SpeckleDynamo
     public Receiver()
     {
       var hack = new ConverterHack();
-
+      Transmitting = false;
       RegisterAllPorts();
     }
 
@@ -86,7 +89,6 @@ namespace SpeckleDynamo
     {
       try
       {
-
         //ID disconnected
         if (!InPorts[0].Connectors.Any() && !StreamTextBoxEnabled && StreamId != null)
         {
@@ -116,6 +118,7 @@ namespace SpeckleDynamo
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
       this.ClearErrorsAndWarnings();
+
       if (_registeringPorts)
         return Enumerable.Empty<AssociativeNode>();
       //probably means that the stream ID has changed
@@ -128,7 +131,12 @@ namespace SpeckleDynamo
       }
       else
       {
-        Message = "Got data\n@" + DateTime.Now.ToString("HH:mm:ss");
+
+          Transmitting = false;
+          Message = "Got data\n@" + DateTime.Now.ToString("HH:mm:ss");
+
+       
+        
         hasNewData = false;
         if (Layers == null || ConvertedObjects.Count == 0)
           return Enumerable.Empty<AssociativeNode>();
@@ -196,8 +204,11 @@ namespace SpeckleDynamo
            {
                 AstFactory.BuildStringNode(StreamId+layer.Guid)
            });
-
-          associativeNodes.Add(AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex((int)layer.OrderIndex), functionCall));
+          try
+          {
+            associativeNodes.Add(AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex((int)layer.OrderIndex), functionCall));
+          }
+          catch { }
 
         }
         return associativeNodes;
@@ -290,12 +301,14 @@ namespace SpeckleDynamo
       Layers = result.Resource.Layers.ToList();
 
       UpdateOutputStructure();
+      Transmitting = false;
     }
 
     public virtual void UpdateChildren()
     {
       var result = myReceiver.StreamGetAsync(myReceiver.StreamId, "fields=children").Result;
       myReceiver.Stream.Children = result.Resource.Children;
+      Transmitting = false;
     }
 
     private void UpdateOutputStructure()
@@ -394,15 +407,16 @@ namespace SpeckleDynamo
 
     }
 
-    internal void Stream_LostFocus(object sender, RoutedEventArgs e)
+    internal void StreamChanged()
     {
       ChangeStreams(StreamId);
     }
 
-    private void ChangeStreams(string StreamId)
+    internal void ChangeStreams(string StreamId)
     {
       if (StreamId == OldStreamId)
         return;
+      Transmitting = true;
       OldStreamId = StreamId;
 
       Console.WriteLine("Changing streams...");
@@ -419,9 +433,7 @@ namespace SpeckleDynamo
       myReceiver = new SpeckleApiClient(RestApi, true);
 
       InitReceiverEventsAndGlobals();
-
-      //TODO: get documentname and guid, not sure how... Maybe with an extension?
-      myReceiver.IntializeReceiver(StreamId, "none", "Dynamo", "none", AuthToken);
+      myReceiver.IntializeReceiver(StreamId, DocumentName, "Dynamo", DocumentGuid, AuthToken);
     }
 
     private void ResetReceiver()
@@ -432,6 +444,7 @@ namespace SpeckleDynamo
       ConvertedObjects = new List<object>();
       this.DispatchOnUIThread(() => OutPorts.RemoveAll((p) => { return true; }));
       Message = "";
+      Transmitting = false;
       Name = "Speckle Receiver";
     }
 
@@ -442,11 +455,12 @@ namespace SpeckleDynamo
       {
         this.DispatchOnUIThread(() => OutPorts.RemoveAll((p) => { return true; }));
         Message = "";
+        Transmitting = false;
         AuthToken = Utils.Accounts.GetAuthToken(Email, RestApi);
         InitReceiverEventsAndGlobals();
         return;
       }
-
+      Transmitting = true;
       var myForm = new SpecklePopup.MainWindow();
       //TODO: fix this it's crashing revit
       //myForm.Owner = Application.Current.MainWindow;
@@ -470,11 +484,13 @@ namespace SpeckleDynamo
           Message = "";
           Error("Account selection failed.");
         }
+        Transmitting = false;
       });
     }
 
     internal void PausePlayButtonClick(object sender, RoutedEventArgs e)
     {
+      
       Paused = !Paused;
       //if there's new data, get it on resume
       if (Expired && !Paused)
@@ -487,13 +503,16 @@ namespace SpeckleDynamo
 
     public virtual void OnWsMessage(object source, SpeckleEventArgs e)
     {
+      //node disconnected before event was received
+      if (string.IsNullOrEmpty(StreamId))
+        return;
       if (Paused)
       {
         Message = "Update available since " + DateTime.Now;
         Expired = true;
         return;
       }
-
+      Transmitting = true;
       switch ((string)e.EventObject.args.eventType)
       {
         case "update-global":
