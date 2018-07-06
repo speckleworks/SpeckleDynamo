@@ -15,7 +15,7 @@
   "repository_url": "https://github.com/speckleworks/SpeckleDynamo",
   "contains_binaries": true,
   "node_libraries": [
-    "SpeckleDynamo, Version=0.0.1.0, Culture=neutral, PublicKeyToken=null",
+    "SpeckleDynamo, Version=0.0.3.0, Culture=neutral, PublicKeyToken=null",
     "SpeckleDynamo.Functions, Version=0.0.1.0, Culture=neutral, PublicKeyToken=null"
   ]
 }

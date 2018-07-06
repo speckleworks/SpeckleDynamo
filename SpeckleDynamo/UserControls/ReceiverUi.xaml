@@ -56,7 +56,7 @@
         Click="Button_Click"
         Content="{materialDesign:PackIcon ContentPaste}"
         Foreground="#4C4B4A"
-        ToolTip="Icon" />
+        ToolTip="Paste Stream ID" />
     </Grid>
 
     <Button
