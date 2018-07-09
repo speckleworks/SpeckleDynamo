@@ -63,7 +63,6 @@ namespace SpeckleDynamo
 
     #endregion
 
-
     #region Numbers
     public static SpeckleNumber ToSpeckle(this float num)
     {
@@ -91,7 +90,6 @@ namespace SpeckleDynamo
     }
     #endregion
 
-
     #region Booleans
     public static SpeckleBoolean ToSpeckle(this bool b)
     {
@@ -104,7 +102,6 @@ namespace SpeckleDynamo
     }
     #endregion
 
-
     #region Strings
     public static SpeckleString ToSpeckle(this string b)
     {
@@ -116,8 +113,6 @@ namespace SpeckleDynamo
       return b.Value;
     }
     #endregion
-
-
 
     #region Points
 
@@ -214,7 +209,6 @@ namespace SpeckleDynamo
     }
     #endregion
 
-
     #region Planes
     /// <summary>
     /// DS Plane to SpecklePlane
@@ -223,7 +217,11 @@ namespace SpeckleDynamo
     /// <returns></returns>
     public static SpecklePlane ToSpeckle(this Plane plane)
     {
-      return new SpecklePlane(plane.Origin.ToSpeckle(), plane.Normal.ToSpeckle(), plane.XAxis.ToSpeckle(), plane.YAxis.ToSpeckle());
+      return new SpecklePlane(
+        plane.Origin.ToSpeckle(),
+        plane.Normal.ToSpeckle(),
+        plane.XAxis.ToSpeckle(),
+        plane.YAxis.ToSpeckle());
     }
 
     /// <summary>
@@ -233,11 +231,12 @@ namespace SpeckleDynamo
     /// <returns></returns>
     public static Plane ToNative(this SpecklePlane plane)
     {
-      var returnPlane = Plane.ByOriginNormal(plane.Origin.ToNative(), plane.Normal.ToNative());
-      return returnPlane;
+      return Plane.ByOriginXAxisYAxis(
+        plane.Origin.ToNative(),
+        plane.Xdir.ToNative(),
+        plane.Ydir.ToNative());
     }
     #endregion
-
 
     #region Linear
 
@@ -434,11 +433,11 @@ namespace SpeckleDynamo
     /// <returns></returns>
     public static SpeckleCircle ToSpeckle(this Circle circ)
     {
-      return new SpeckleCircle(
-        circ.CenterPoint.ToSpeckle(),
-        circ.Normal.ToSpeckle(),
-        circ.Radius
-        );
+      using (Vector xAxis = Vector.ByTwoPoints(circ.CenterPoint, circ.StartPoint))
+      using (Plane plane = Plane.ByOriginNormalXAxis(circ.CenterPoint, circ.Normal, xAxis))
+      {
+        return new SpeckleCircle(plane.ToSpeckle(), circ.Radius);
+      }
     }
 
     /// <summary>
@@ -448,11 +447,13 @@ namespace SpeckleDynamo
     /// <returns></returns>
     public static Circle ToNative(this SpeckleCircle circ)
     {
-      return Circle.ByCenterPointRadiusNormal(
-        circ.Center.ToNative(),
-        circ.Radius.Value,
-        circ.Normal.ToNative()
-        );
+      using (Plane basePlane = circ.Plane.ToNative())
+      using (Circle preCircle = Circle.ByPlaneRadius(basePlane, circ.Radius.Value))
+      using (Vector preXvector = Vector.ByTwoPoints(preCircle.CenterPoint, preCircle.StartPoint))
+      {
+        double angle = preXvector.AngleAboutAxis(basePlane.XAxis, basePlane.Normal);
+        return (Circle)preCircle.Rotate(basePlane, angle);
+      }
     }
 
 
@@ -463,14 +464,16 @@ namespace SpeckleDynamo
     /// <returns></returns>
     public static SpeckleArc ToSpeckle(this Arc a)
     {
-      SpeckleArc arc = new SpeckleArc(
-              Plane.ByOriginNormal(a.CenterPoint, a.Normal).ToSpeckle(),
-              a.Radius,
-              a.StartAngle.ToRadians(),
-              (a.StartAngle + a.SweepAngle).ToRadians(),
-              a.SweepAngle.ToRadians()
-          );
-      return arc;
+      using (Vector xAxis = Vector.ByTwoPoints(a.CenterPoint, a.StartPoint))
+      {
+        return new SpeckleArc(
+            Plane.ByOriginNormalXAxis(a.CenterPoint, a.Normal, xAxis).ToSpeckle(),
+            a.Radius,
+            0, // This becomes 0 as arcs are interpreted to start from the plane's X axis.
+            a.SweepAngle.ToRadians(),
+            a.SweepAngle.ToRadians()
+        );
+      }
     }
 
     /// <summary>
@@ -480,14 +483,16 @@ namespace SpeckleDynamo
     /// <returns></returns>
     public static Arc ToNative(this SpeckleArc a)
     {
-      Arc arc = Arc.ByCenterPointRadiusAngle(
-              a.Plane.Origin.ToNative(),
-              a.Radius.Value,
-              a.StartAngle.Value.ToDegrees(),
-              a.EndAngle.Value.ToDegrees(),
-              a.Plane.Normal.ToNative()
-      );
-      return arc;
+      using (Plane basePlane = a.Plane.ToNative())
+      using (Point startPoint = (Point)basePlane.Origin.Translate(basePlane.XAxis, a.Radius.Value))
+      {
+        return Arc.ByCenterPointStartPointSweepAngle(
+            basePlane.Origin,
+            startPoint,
+            a.AngleRadians.Value.ToDegrees(),
+            basePlane.Normal
+          );
+      }
     }
 
 
@@ -499,14 +504,14 @@ namespace SpeckleDynamo
     public static SpeckleEllipse ToSpeckle(this Ellipse e)
     {
       return new SpeckleEllipse(
-          Plane.ByOriginNormal(e.CenterPoint, e.Normal).ToSpeckle(),
+          Plane.ByOriginNormalXAxis(e.CenterPoint, e.Normal, e.MajorAxis).ToSpeckle(),
           e.MajorAxis.Length,
           e.MinorAxis.Length
       );
     }
 
     /// <summary>
-    /// SpeckleEllipseto DS Ellipse
+    /// SpeckleEllipse to DS Ellipse
     /// </summary>
     /// <param name="e"></param>
     /// <returns></returns>
