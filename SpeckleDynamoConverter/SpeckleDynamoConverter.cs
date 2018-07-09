@@ -427,7 +427,7 @@ namespace SpeckleDynamo
     #region Curves
 
     /// <summary>
-    /// DS Circle to SpeckleCircle
+    /// DS Circle to SpeckleCircle.
     /// </summary>
     /// <param name="circ"></param>
     /// <returns></returns>
@@ -441,7 +441,8 @@ namespace SpeckleDynamo
     }
 
     /// <summary>
-    /// SpeckleCircle to DS Circle
+    /// SpeckleCircle to DS Circle. Rotating the circle is due to a bug in ProtoGeometry
+    /// that will be solved on Dynamo 2.1.
     /// </summary>
     /// <param name="circ"></param>
     /// <returns></returns>
@@ -465,9 +466,10 @@ namespace SpeckleDynamo
     public static SpeckleArc ToSpeckle(this Arc a)
     {
       using (Vector xAxis = Vector.ByTwoPoints(a.CenterPoint, a.StartPoint))
+      using (Plane basePlane = Plane.ByOriginNormalXAxis(a.CenterPoint, a.Normal, xAxis))
       {
         return new SpeckleArc(
-            Plane.ByOriginNormalXAxis(a.CenterPoint, a.Normal, xAxis).ToSpeckle(),
+            basePlane.ToSpeckle(),
             a.Radius,
             0, // This becomes 0 as arcs are interpreted to start from the plane's X axis.
             a.SweepAngle.ToRadians(),
@@ -503,11 +505,14 @@ namespace SpeckleDynamo
     /// <returns></returns>
     public static SpeckleEllipse ToSpeckle(this Ellipse e)
     {
-      return new SpeckleEllipse(
-          Plane.ByOriginNormalXAxis(e.CenterPoint, e.Normal, e.MajorAxis).ToSpeckle(),
-          e.MajorAxis.Length,
-          e.MinorAxis.Length
-      );
+      using (Plane basePlane = Plane.ByOriginNormalXAxis(e.CenterPoint, e.Normal, e.MajorAxis))
+      {
+        return new SpeckleEllipse(
+              basePlane.ToSpeckle(),
+              e.MajorAxis.Length,
+              e.MinorAxis.Length
+          ); 
+      }
     }
 
     /// <summary>
