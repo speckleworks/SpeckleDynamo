@@ -25,7 +25,7 @@ build:
 
 after_build:
   # zip everything into a zip file containing package folder structure
-  - 7z a SpeckleDynamo-%APPVEYOR_BUILD_VERSION%.zip %APPVEYOR_BUILD_FOLDER%\SpeckleDynamo\bin\Release\SpeckleDynamo\*
+  - 7z a SpeckleDynamo-%APPVEYOR_BUILD_VERSION%.zip %APPVEYOR_BUILD_FOLDER%\SpeckleDynamo\bin\Release\Speckle for Dynamo\*
 
 artifacts:
   path: SpeckleDynamo-%APPVEYOR_BUILD_VERSION%.zip
