@@ -343,7 +343,7 @@
 
     <Message Importance="High" Text="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" />
     <Message Importance="High" Text="PACKAGE BUILT IN $(TargetDir)$(PackageName)" />
-    <CallTarget Targets="PackageDeploy" />
+    <CallTarget Targets="PackageDeploy" Condition="'$(CI)' != 'True'" />
   </Target>
   <Target Name="PackageDeploy">
     <ItemGroup>
