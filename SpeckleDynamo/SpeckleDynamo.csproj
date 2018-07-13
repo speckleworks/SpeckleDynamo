@@ -343,15 +343,21 @@
 
     <Message Importance="High" Text="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" />
     <Message Importance="High" Text="PACKAGE BUILT IN $(TargetDir)$(PackageName)" />
-    <CallTarget Condition="'$(Configuration)' == 'Debug'" Targets="PackageDeploy" />
+    <CallTarget Targets="PackageDeploy" />
   </Target>
   <Target Name="PackageDeploy">
     <ItemGroup>
       <SourcePackage Include="$(TargetDir)\$(PackageName)\**\*" />
     </ItemGroup>
-    <!--Copying to Package Folder-->
-    <Copy SourceFiles="@(SourcePackage)" DestinationFolder="$(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(PackageName)\%(RecursiveDir)" />
+    <PropertyGroup>
+        <!--Copy to dynamo sandbox for testing -->
+      <DeployFolder Condition="'$(Configuration)' == 'Debug'">$(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(PackageName)\%(RecursiveDir)</DeployFolder>
+        <!--Copy to dynamo revit for publishing -->
+      <DeployFolder Condition="'$(Configuration)' == 'Release'">$(AppData)\Dynamo\Dynamo Revit\$(DynamoVersion)\packages\$(PackageName)\%(RecursiveDir)</DeployFolder>
+    </PropertyGroup>
+
+    <Copy SourceFiles="@(SourcePackage)" DestinationFolder="$(DeployFolder)" />
     <Message Importance="High" Text="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" />
-    <Message Importance="High" Text="PACKAGE DEPLOYED TO $(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(PackageName)\" />
+    <Message Importance="High" Text="PACKAGE DEPLOYED TO $(DeployFolder)" />
   </Target>
 </Project>
