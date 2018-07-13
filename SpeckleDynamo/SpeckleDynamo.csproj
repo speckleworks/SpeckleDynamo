@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>SpeckleDynamo</RootNamespace>
     <AssemblyName>SpeckleDynamo</AssemblyName>
+    <PackageName>Speckle for Dynamo</PackageName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -275,6 +276,28 @@
     <Resource Include="Resources\GenericIcon%4032.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <UsingTask TaskName="ReplaceFileText" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+  <ParameterGroup>
+    <PkgInput ParameterType="System.String" Required="true" />
+    <PkgOutput ParameterType="System.String" Required="true" />
+    <ReplacementText ParameterType="System.String" Required="true" />
+  </ParameterGroup>
+  <Task>
+    <Reference Include="System.Core" />
+    <Using Namespace="System" />
+    <Using Namespace="System.IO" />
+    <Using Namespace="System.Text.RegularExpressions" />
+    <!-- replace version number in pkg.json -->
+    <Code Type="Fragment" Language="cs">
+      <![CDATA[
+            File.WriteAllText(
+                PkgOutput,
+                File.ReadAllText(PkgInput).Replace("{{{version}}}",ReplacementText).Replace("{{{semversion}}}",ReplacementText.Substring(0, ReplacementText.LastIndexOf(".")))
+                );
+          ]]>
+    </Code>
+  </Task>
+</UsingTask>
   <Target Name="AfterBuild">
     <!-- Get System.Drawing.dll -->
     <GetReferenceAssemblyPaths TargetFrameworkMoniker=".NETFramework, Version=v2.0">
@@ -287,7 +310,18 @@
     <!-- Generate customization dll -->
     <GenerateResource UseSourcePath="true" Sources="$(ProjectDir)\SpeckleDynamoImages.resx" OutputResources="$(ProjectDir)\SpeckleDynamoImages.resources" References="$(FrameworkAssembliesPath)System.Drawing.dll" />
     <AL TargetType="library" EmbedResources="$(ProjectDir)\SpeckleDynamoImages.resources" OutputAssembly="$(OutDir)SpeckleDynamo.customization.dll" Version="%(AssemblyInfo.Version)" />
+    <CallTarget Targets="GetAssemblyVersion" />
     <CallTarget Targets="PackageDirectoryBuild" />
+  </Target>
+  <Target Name="GetAssemblyVersion">
+    <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
+      <Output TaskParameter="Assemblies" ItemName="Targets" />
+    </GetAssemblyIdentity>
+    <ItemGroup>
+      <VersionNumber Include="@(Targets->'%(Version)')"/>
+    </ItemGroup>
+    <Message Importance="High" Text="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" />
+    <Message Importance="High" Text="HELLO, THE ASSEMBLY VERSION IS @(VersionNumber)" />
   </Target>
   <Target Name="PackageDirectoryBuild">
     <ItemGroup>
@@ -296,18 +330,28 @@
       <SourcePkg Include="$(ProjectDir)pkg.json" />
       <SourceExtension Include="$(TargetDir)$(ProjectName)Extension_ViewExtensionDefinition.xml" />
     </ItemGroup>
+    <!-- replace text in pkgempty.json -->
+    <ReplaceFileText
+    PkgInput="$(ProjectDir)pkgempty.json"
+    PkgOutput="$(ProjectDir)pkg.json"
+    ReplacementText="@(VersionNumber)" />
     <!--Copying to Build Folder-->
-    <Copy SourceFiles="@(SourceDlls)" DestinationFolder="$(TargetDir)\$(ProjectName)\bin\" />
-    <Copy SourceFiles="@(SourcePdbs)" DestinationFolder="$(TargetDir)\$(ProjectName)\bin\" />
-    <Copy SourceFiles="@(SourcePkg)" DestinationFolder="$(TargetDir)\$(ProjectName)" />
-    <Copy SourceFiles="@(SourceExtension)" DestinationFolder="$(TargetDir)\$(ProjectName)\extra" />
+    <Copy SourceFiles="@(SourceDlls)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />
+    <Copy SourceFiles="@(SourcePdbs)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />
+    <Copy SourceFiles="@(SourcePkg)" DestinationFolder="$(TargetDir)$(PackageName)" />
+    <Copy SourceFiles="@(SourceExtension)" DestinationFolder="$(TargetDir)\$(PackageName)\extra" />
+
+    <Message Importance="High" Text="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" />
+    <Message Importance="High" Text="PACKAGE BUILT IN $(TargetDir)$(PackageName)" />
     <CallTarget Condition="'$(Configuration)' == 'Debug'" Targets="PackageDeploy" />
   </Target>
   <Target Name="PackageDeploy">
     <ItemGroup>
-      <SourcePackage Include="$(TargetDir)\$(ProjectName)\**\*" />
+      <SourcePackage Include="$(TargetDir)\$(PackageName)\**\*" />
     </ItemGroup>
     <!--Copying to Package Folder-->
-    <Copy SourceFiles="@(SourcePackage)" DestinationFolder="$(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\Speckle for Dynamo\%(RecursiveDir)" />
+    <Copy SourceFiles="@(SourcePackage)" DestinationFolder="$(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(PackageName)\%(RecursiveDir)" />
+    <Message Importance="High" Text="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" />
+    <Message Importance="High" Text="PACKAGE DEPLOYED TO $(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(PackageName)\" />
   </Target>
 </Project>
