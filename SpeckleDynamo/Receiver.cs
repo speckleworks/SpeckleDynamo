@@ -16,6 +16,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 using System.Windows;
 using System.Xml;
+using Dynamo.Models;
 
 namespace SpeckleDynamo
 {
@@ -61,7 +62,8 @@ namespace SpeckleDynamo
     public bool Transmitting { get => _transmitting; set { _transmitting = value; NotifyPropertyChanged("Transmitting"); } }
     public string DocumentName = "none";
     public string DocumentGuid = "none";
-   
+    internal RunType RunType;
+
     public string OldStreamId;
     [JsonIgnore]
     public string Message { get => _message; set { _message = value; NotifyPropertyChanged("Message"); } }
@@ -282,7 +284,10 @@ namespace SpeckleDynamo
           Console.WriteLine("Some objects failed to convert.");
         }
 
-        this.Message = "Updating...";
+        if(RunType == RunType.Manual)
+          this.Message = "Update available since " + DateTime.Now;
+        else
+          this.Message = "Updating...";
 
         //expire node on main thread
         hasNewData = true;
@@ -453,10 +458,11 @@ namespace SpeckleDynamo
       //saved receiver
       if (myReceiver != null)
       {
-        this.DispatchOnUIThread(() => OutPorts.RemoveAll((p) => { return true; }));
+       // this.DispatchOnUIThread(() => OutPorts.RemoveAll((p) => { return true; }));
         Message = "";
         Transmitting = false;
         AuthToken = Utils.Accounts.GetAuthToken(Email, RestApi);
+        OldLayers = OutPorts.Select(x => new Layer(x.Name, x.ToolTip, "", 0, 0, 0)).ToList();
         InitReceiverEventsAndGlobals();
         return;
       }
