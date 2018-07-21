@@ -80,6 +80,15 @@
     <WarningLevel>4</WarningLevel>
     <DynamoVersion>2.0</DynamoVersion>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugRevit|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\DebugRevit\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;Version2.0</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
   <!-- END MULTIVERSION CONFIGURATION -->
   <ItemGroup>
     <Reference Include="System" />
