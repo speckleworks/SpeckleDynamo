@@ -125,6 +125,10 @@
       <Project>{cfe27d3d-8a1a-43f9-9387-8fd9e119e174}</Project>
       <Name>SpeckleCore</Name>
     </ProjectReference>
+    <ProjectReference Include="..\SpeckleDynamoFUnctions\SpeckleDynamoFunctions.csproj">
+      <Project>{7d9a6b97-5773-44b1-8c04-367bff0f8599}</Project>
+      <Name>SpeckleDynamoFunctions</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
