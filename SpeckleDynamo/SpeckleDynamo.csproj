@@ -32,7 +32,7 @@
     <DynamoVersion>2.0</DynamoVersion>
   </PropertyGroup>
   <!-- DynamoRevit 2.0 -->
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugRevit|AnyCPU' ">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugRevit|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
