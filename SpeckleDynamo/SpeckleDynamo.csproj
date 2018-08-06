@@ -29,7 +29,7 @@
     <WarningLevel>4</WarningLevel>
     <StartAction>Program</StartAction>
     <StartProgram>C:\Program Files\Dynamo\Dynamo Core\2\DynamoSandbox.exe</StartProgram>
-    <DynamoVersion>2.0</DynamoVersion>
+    <DynamoVersion>2.1</DynamoVersion>
   </PropertyGroup>
   <!-- DynamoRevit 2.0 -->
     <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugRevit|AnyCPU' ">
@@ -43,7 +43,7 @@
     <WarningLevel>4</WarningLevel>
     <StartAction>Program</StartAction>
     <StartProgram>C:\Program Files\Autodesk\Revit 2018\Revit.exe</StartProgram>
-    <DynamoVersion>2.0</DynamoVersion>
+    <DynamoVersion>2.1</DynamoVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -53,7 +53,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DynamoVersion>2.0</DynamoVersion>
+    <DynamoVersion>2.1</DynamoVersion>
   </PropertyGroup>
   <!-- END MULTIVERSION CONFIGURATION -->
   <PropertyGroup>

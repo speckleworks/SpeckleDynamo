@@ -20,7 +20,11 @@ namespace SpeckleDynamoExtension
   /// </summary>
   public class SpeckleDynamoExtension : IViewExtension
   {
+    private MenuItem speckleMenu;
     private MenuItem speckleAccountsMenu;
+    private MenuItem speckleNodesSender;
+    private MenuItem speckleNodesReceiver;
+
 
     public void Dispose()
     {
@@ -28,28 +32,66 @@ namespace SpeckleDynamoExtension
 
     public void Startup(ViewStartupParams p)
     {
+
     }
 
     public void Loaded(ViewLoadedParams p)
     {
-      speckleAccountsMenu = new MenuItem { Header = "Speckle Accounts" };
+      speckleMenu = new MenuItem { Header = "Speckle" };
+      speckleAccountsMenu = new MenuItem { Header = "Manage Accounts" };
+      speckleNodesSender = new MenuItem { Header = "Send Nodes" };
+      speckleNodesReceiver = new MenuItem { Header = "Receive Nodes" };
+
+      //accounts
       speckleAccountsMenu.Click += (sender, args) =>
       {
-       //var viewModel = new SampleWindowViewModel(p);
-        var window = new SpecklePopup.MainWindow (false)
+              //var viewModel = new SampleWindowViewModel(p);
+              var window = new SpecklePopup.MainWindow(false)
         {
-
           Owner = p.DynamoWindow
         };
-
         window.Left = window.Owner.Left + 400;
         window.Top = window.Owner.Top + 200;
-
-              // Show a modeless window.
         window.Show();
       };
-      p.AddMenuItem(MenuBarType.View, speckleAccountsMenu);
+
+      //sender
+      speckleNodesSender.Click += (sender, args) =>
+      {
+        var viewModel = new SenderViewModel(p);
+        var window = new Sender()
+        {
+          Owner = p.DynamoWindow,
+
+        };
+        window.DataContext = viewModel;
+        window.Left = window.Owner.Left + 400;
+        window.Top = window.Owner.Top + 200;
+        window.ForceSend.Click += viewModel.Send_Click;
+        window.Show();
+      };
+
+      //receiver
+      speckleNodesReceiver.Click += (receiver, args) =>
+      {
+        var viewModel = new ReceiverViewModel(p);
+        var window = new Receiver()
+        {
+          Owner = p.DynamoWindow,      
+        };
+        window.DataContext = viewModel;
+        window.Left = window.Owner.Left;
+        window.Top = window.Owner.Top + 200;
+        window.StreamChanged += viewModel.StreamChanged;
+        window.Show();
+      };
+
+      speckleMenu.Items.Add(speckleAccountsMenu);
+      speckleMenu.Items.Add(speckleNodesSender);
+      speckleMenu.Items.Add(speckleNodesReceiver);
+      p.dynamoMenu.Items.Insert(p.dynamoMenu.Items.Count-1,speckleMenu);
     }
+
 
     public void Shutdown()
     {

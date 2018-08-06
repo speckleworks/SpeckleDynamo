@@ -10,6 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using SpeckleDynamoConverter;
 
 namespace SpeckleDynamo
 {
@@ -752,6 +753,18 @@ namespace SpeckleDynamo
 
       return Mesh.ByPointsFaceIndices(points, faces);
     }
+
+
+    //public static SpeckleNodeEvent ToNative(this SpeckleNodeEvent speckleNodeEvent)
+    //{
+    //  return speckleNodeEvent;
+    //}
+
+
+    //public static SpeckleNodeEvent ToSpeckle(this SpeckleNodeEvent speckleNodeEvent)
+    //{
+    //  return speckleNodeEvent;
+    //}
 
   }
 }

@@ -305,7 +305,7 @@ namespace SpeckleDynamo
           //this.Locked = false;
           Name = "Anonymous Stream";
           ExpireNode();
-          //Rhino.RhinoApp.MainApplicationWindow.Invoke(ExpireComponentAction);
+
         };
 
       mySender.OnWsMessage += OnWsMessage;
