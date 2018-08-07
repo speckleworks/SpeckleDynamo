@@ -22,7 +22,8 @@ namespace SpeckleDynamo
   public static class SpeckleDynamoConverter
   {
     const double EPS = 1e-6;
-    const string speckleKey = "speckle";
+    const string speckleKey = SpeckleDynamo.Data.UserData.speckleKey;
+    const string appId = null;
 
     public static bool SetBrepDisplayMesh = true;
     public static bool AddMeshTextureCoordinates = false;
@@ -138,10 +139,7 @@ namespace SpeckleDynamo
     /// <returns></returns>
     public static SpecklePoint ToSpeckle(this Point pt)
     {
-      return new SpecklePoint(pt.X, pt.Y, pt.Z)
-      {
-        Properties = pt.GetSpeckleProperties()
-      };
+      return new SpecklePoint(pt.X, pt.Y, pt.Z, appId, pt.GetSpeckleProperties());
     }
 
     /// <summary>
@@ -239,10 +237,9 @@ namespace SpeckleDynamo
       plane.Origin.ToSpeckle(),
       plane.Normal.ToSpeckle(),
       plane.XAxis.ToSpeckle(),
-      plane.YAxis.ToSpeckle())
-      {
-        Properties = plane.GetSpeckleProperties()
-      };
+      plane.YAxis.ToSpeckle(),
+      appId,
+      plane.GetSpeckleProperties());
     }
 
     /// <summary>
@@ -270,10 +267,10 @@ namespace SpeckleDynamo
     /// <returns></returns>
     public static SpeckleLine ToSpeckle(this Line line)
     {
-      return new SpeckleLine((new Point[] { line.StartPoint, line.EndPoint }).ToFlatArray())
-      {
-        Properties = line.GetSpeckleProperties()
-      };
+      return new SpeckleLine(
+        (new Point[] { line.StartPoint, line.EndPoint }).ToFlatArray(),
+        appId,
+        line.GetSpeckleProperties());
     }
 
     /// <summary>
@@ -298,10 +295,9 @@ namespace SpeckleDynamo
     /// <returns></returns>
     public static SpecklePolyline ToSpeckle(this Polygon polygon)
     {
-      return new SpecklePolyline(polygon.Points.ToFlatArray())
+      return new SpecklePolyline(polygon.Points.ToFlatArray(), null, polygon.GetSpeckleProperties())
       {
-        Closed = true,
-        Properties = polygon.GetSpeckleProperties()
+        Closed = true
       };
     }
 
@@ -469,10 +465,7 @@ namespace SpeckleDynamo
       using (Vector xAxis = Vector.ByTwoPoints(circ.CenterPoint, circ.StartPoint))
       using (Plane plane = Plane.ByOriginNormalXAxis(circ.CenterPoint, circ.Normal, xAxis))
       {
-        return new SpeckleCircle(plane.ToSpeckle(), circ.Radius)
-        {
-          Properties = circ.GetSpeckleProperties()
-        };
+        return new SpeckleCircle(plane.ToSpeckle(), circ.Radius, appId, circ.GetSpeckleProperties());
       }
     }
 
@@ -510,11 +503,9 @@ namespace SpeckleDynamo
             a.Radius,
             0, // This becomes 0 as arcs are interpreted to start from the plane's X axis.
             a.SweepAngle.ToRadians(),
-            a.SweepAngle.ToRadians()
-        )
-        {
-          Properties = a.GetSpeckleProperties()
-        };
+            a.SweepAngle.ToRadians(),
+            appId,
+            a.GetSpeckleProperties());
       }
     }
 
@@ -548,13 +539,11 @@ namespace SpeckleDynamo
       using (Plane basePlane = Plane.ByOriginNormalXAxis(e.CenterPoint, e.Normal, e.MajorAxis))
       {
         return new SpeckleEllipse(
-              basePlane.ToSpeckle(),
-              e.MajorAxis.Length,
-              e.MinorAxis.Length
-          )
-        {
-          Properties = e.GetSpeckleProperties()
-        };
+          basePlane.ToSpeckle(),
+          e.MajorAxis.Length,
+          e.MinorAxis.Length,
+          appId,
+          e.GetSpeckleProperties());
       }
     }
 
@@ -607,17 +596,15 @@ namespace SpeckleDynamo
       {
         var points = polycurve.Curves().SelectMany(c => c.StartPoint.ToArray()).ToList();
         points.AddRange(polycurve.Curves().Last().EndPoint.ToArray());
-        return new SpecklePolyline(points)
-        {
-          Properties = polycurve.GetSpeckleProperties()
-        };
+        return new SpecklePolyline(
+          points,
+          appId,
+          polycurve.GetSpeckleProperties());
       }
       else
       {
-        SpecklePolycurve spkPolycurve = new SpecklePolycurve()
-        {
-          Properties = polycurve.GetSpeckleProperties()
-        };
+        SpecklePolycurve spkPolycurve = new SpecklePolycurve();
+        spkPolycurve.Properties = polycurve.GetSpeckleProperties();
         spkPolycurve.Segments = polycurve.Curves().Select(c => c.ToSpeckle()).ToList();
         spkPolycurve.GenerateHash();
         return spkPolycurve;
@@ -789,10 +776,9 @@ namespace SpeckleDynamo
       //  return new SpeckleMesh(vertices, faces, Colors, textureCoords, properties: mesh.UserDictionary.ToSpeckle());
       //}
 
-      return new SpeckleMesh(vertices, faces, colors, null)
-      {
-        Properties = mesh.Tags.LookupTag(speckleKey) as Dictionary<string, object>
-      };
+      var speckleMesh = new SpeckleMesh(vertices, faces, colors, null, appId);
+      speckleMesh.Properties = mesh.Tags.LookupTag(speckleKey) as Dictionary<string, object>;
+      return speckleMesh;
     }
 
     public static Mesh ToNative(this SpeckleMesh mesh)

@@ -244,6 +244,12 @@
     <Resource Include="Resources\GenericIcon%40128.png" />
     <Resource Include="Resources\GenericIcon%4032.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\SetUserData%4015x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\GetUserData%4015x.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <UsingTask TaskName="ReplaceFileText" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
     <ParameterGroup>
@@ -296,12 +302,14 @@
       <SourcePdbs Include="$(TargetDir)*.pdb" />
       <SourcePkg Include="$(ProjectDir)pkg.json" />
       <SourceExtension Include="$(TargetDir)$(ProjectName)Extension_ViewExtensionDefinition.xml" />
+      <CustomizationXML Include="$(TargetDir)*DynamoCustomization.xml" />
     </ItemGroup>
     <!-- replace text in pkgempty.json -->
     <ReplaceFileText PkgInput="$(ProjectDir)pkgempty.json" PkgOutput="$(ProjectDir)pkg.json" ReplacementText="@(VersionNumber)" />
     <!--Copying to Build Folder-->
     <Copy SourceFiles="@(SourceDlls)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />
     <Copy SourceFiles="@(SourcePdbs)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />
+    <Copy SourceFiles="@(CustomizationXML)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />
     <Copy SourceFiles="@(SourcePkg)" DestinationFolder="$(TargetDir)$(PackageName)" />
     <Copy SourceFiles="@(SourceExtension)" DestinationFolder="$(TargetDir)\$(PackageName)\extra" />
     <Message Importance="High" Text="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" />

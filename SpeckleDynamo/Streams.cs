@@ -17,10 +17,9 @@ using System.Xml;
 
 namespace SpeckleDynamo
 {
-
   [NodeName("Speckle Streams")]
   [NodeDescription("Lists your existing Speckle streams for a specified account.")]
-  [NodeCategory("Speckle")]
+  [NodeCategory("Speckle.I/O")]
 
   //Output
   [OutPortNames("ID")]
