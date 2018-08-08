@@ -28,13 +28,9 @@ namespace SpeckleDynamo.Data
     {
       if (geometry == null) { throw new ArgumentNullException("geometry"); }
       if (dictionary == null) { throw new ArgumentNullException("dictionary"); }
-
-      var dict = new Dictionary<string, object>();
-      var dsDict = geometry.Tags.LookupTag(speckleKey);
-      dictionary.Keys.ToList().ForEach(k => dict.Add(k, dictionary.ValueAtKey(k)));
-
+      
       Geometry newGeo = geometry.Translate();
-      newGeo.Tags.AddTag(speckleKey, dict);
+      newGeo.Tags.AddTag(speckleKey, dictionary.ToNativeDictionary());
       return newGeo;
     }
 
@@ -54,8 +50,43 @@ namespace SpeckleDynamo.Data
       }
       else
       {
-        return DesignScript.Builtin.Dictionary.ByKeysValues(dict.Keys.ToList(), dict.Values.ToList());
+        return dict.ToDynamoDictionary();
       }
+    }
+
+    [IsVisibleInDynamoLibrary(false)]
+    public static Dictionary<string, object> ToNativeDictionary (this DesignScript.Builtin.Dictionary dsDictionary)
+    {
+      Dictionary<string, object> dict = new Dictionary<string, object>();
+      foreach(var key in dsDictionary.Keys)
+      {
+        object value = dsDictionary.ValueAtKey(key);
+        if(value is DesignScript.Builtin.Dictionary)
+        {
+          value = (value as DesignScript.Builtin.Dictionary).ToNativeDictionary();
+        }
+        dict.Add(key, value);
+      }
+      return dict;
+    }
+
+    [IsVisibleInDynamoLibrary(false)]
+    public static DesignScript.Builtin.Dictionary ToDynamoDictionary(this Dictionary<string, object> dictionary)
+    {
+      List<object> values = new List<object>();
+      foreach(var value in dictionary.Values)
+      {
+        if(value is Dictionary<string, object>)
+        {
+          values.Add((value as Dictionary<string, object>).ToDynamoDictionary());
+        }
+        else
+        {
+          values.Add(value);
+        }
+      }
+
+      return DesignScript.Builtin.Dictionary.ByKeysValues(dictionary.Keys.ToList(), values);
     }
   }
 }
