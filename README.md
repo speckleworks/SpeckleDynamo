@@ -13,19 +13,17 @@ Speckle for Dynamo **Alpha** is out! Get the latest version from the Dynamo Pack
 ---
 ## Contents
 
-- [Speckle for Dynamo](#speckle-for-dynamo)
-    - [Contents](#contents)
-    - [Installation](#installation)
-    - [Usage](#usage)
-    - [Custom UserData](#custom-userdata)
-    - [Bugs and feature requests](#bugs-and-feature-requests)
-    - [Building Speckle for Dynamo](#building-speckle-for-dynamo)
-        - [Requirements](#requirements)
-        - [Dev Notes](#dev-notes)
-        - [Building Process](#building-process)
-        - [Debugging](#debugging)
-    - [About Speckle](#about-speckle)
-    - [Credits](#credits)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Custom UserData](#custom-userdata)
+- [Bugs and feature requests](#bugs-and-feature-requests)
+- [Building Speckle for Dynamo](#building-speckle-for-dynamo)
+    - [Requirements](#requirements)
+    - [Dev Notes](#dev-notes)
+    - [Building Process](#building-process)
+    - [Debugging](#debugging)
+- [About Speckle](#about-speckle)
+- [Credits](#credits)
 
 ## Installation
 
