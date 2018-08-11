@@ -63,16 +63,59 @@ namespace SpeckleDynamo
       return ((max - min) * 0.5) + min;
     }
 
+    public static Dictionary<string, object> ToSpeckle(this DesignScript.Builtin.Dictionary dict)
+    {
+      if(dict == null) { return null; }
+      var speckleDict = new Dictionary<string, object>();
+      foreach(var key in dict.Keys)
+      {
+        object value = dict.ValueAtKey(key);
+        if(value is DesignScript.Builtin.Dictionary)
+        {
+          value = (value as DesignScript.Builtin.Dictionary).ToSpeckle();
+        }
+        else if (value is Geometry)
+        {
+          value = Converter.Serialise(value);
+        }
+        speckleDict.Add(key, value);
+      }
+      return speckleDict;
+    }
+
+    public static DesignScript.Builtin.Dictionary ToNative(this Dictionary<string, object> speckleDict)
+    {
+      if (speckleDict == null) { return null; }
+      var keys = new List<string>();
+      var values = new List<object>();
+      foreach (var pair in speckleDict)
+      {
+        object value = pair.Value;
+        if (value is Dictionary<string, object>)
+        {
+          value = (value as Dictionary<string, object>).ToNative();
+        }
+        else if(value is SpeckleObject)
+        {
+          value = Converter.Deserialise(value as SpeckleObject);
+        }
+        keys.Add(pair.Key);
+        values.Add(value);
+      }
+      return DesignScript.Builtin.Dictionary.ByKeysValues(keys, values);
+    }
+
     public static Dictionary<string, object> GetSpeckleProperties(this Geometry geometry)
     {
-      return geometry.Tags.LookupTag(speckleKey) as Dictionary<string, object>;
+      var userData =  geometry.Tags.LookupTag(speckleKey) as DesignScript.Builtin.Dictionary;
+      return userData.ToSpeckle();
     }
 
     public static T SetSpeckleProperties<T>(this Geometry geometry, Dictionary<string, object> properties)
     {
       if(properties != null)
       {
-        geometry.Tags.AddTag(speckleKey, properties);
+        geometry.Tags.AddTag(speckleKey, properties.ToNative());
       }
       return (T) Convert.ChangeType(geometry, typeof(T));
     }
