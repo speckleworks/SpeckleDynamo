@@ -24,14 +24,21 @@ namespace SpeckleDynamo.Data
     [NodeName("Set")]
     [NodeCategory("Speckle.UserData")]
     [NodeDescription("Defines custom user properties to the input geometry")]
-    public static Geometry Set (Geometry geometry, DesignScript.Builtin.Dictionary dictionary)
+    public static Geometry Set (Geometry geometry, [DefaultArgument("{}")]DesignScript.Builtin.Dictionary dictionary)
     {
       if (geometry == null) { throw new ArgumentNullException("geometry"); }
       if (dictionary == null) { throw new ArgumentNullException("dictionary"); }
       
-      Geometry newGeo = geometry.Translate();
-      newGeo.Tags.AddTag(speckleKey, dictionary.ToNativeDictionary());
-      return newGeo;
+      if(dictionary.Count > 0)
+      {
+        Geometry newGeo = geometry.Translate();
+        newGeo.Tags.AddTag(speckleKey, dictionary);
+        return newGeo;
+      }
+      else
+      {
+        return geometry;
+      }
     }
 
     /// <summary>
@@ -43,50 +50,15 @@ namespace SpeckleDynamo.Data
     public static DesignScript.Builtin.Dictionary Get(Geometry geometry)
     {
       if (geometry == null) { throw new ArgumentNullException("geometry"); }
-      var dict = (Dictionary<string,object>)geometry.Tags.LookupTag(speckleKey);
+      var dict = (Dictionary)geometry.Tags.LookupTag(speckleKey);
       if(dict == null)
       {
         return null;
       }
       else
       {
-        return dict.ToDynamoDictionary();
+        return dict;
       }
-    }
-
-    [IsVisibleInDynamoLibrary(false)]
-    public static Dictionary<string, object> ToNativeDictionary (this DesignScript.Builtin.Dictionary dsDictionary)
-    {
-      Dictionary<string, object> dict = new Dictionary<string, object>();
-      foreach(var key in dsDictionary.Keys)
-      {
-        object value = dsDictionary.ValueAtKey(key);
-        if(value is DesignScript.Builtin.Dictionary)
-        {
-          value = (value as DesignScript.Builtin.Dictionary).ToNativeDictionary();
-        }
-        dict.Add(key, value);
-      }
-      return dict;
-    }
-
-    [IsVisibleInDynamoLibrary(false)]
-    public static DesignScript.Builtin.Dictionary ToDynamoDictionary(this Dictionary<string, object> dictionary)
-    {
-      List<object> values = new List<object>();
-      foreach(var value in dictionary.Values)
-      {
-        if(value is Dictionary<string, object>)
-        {
-          values.Add((value as Dictionary<string, object>).ToDynamoDictionary());
-        }
-        else
-        {
-          values.Add(value);
-        }
-      }
-
-      return DesignScript.Builtin.Dictionary.ByKeysValues(dictionary.Keys.ToList(), values);
     }
   }
 }
