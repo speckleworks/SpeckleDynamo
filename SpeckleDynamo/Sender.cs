@@ -24,7 +24,7 @@ namespace SpeckleDynamo
 {
   [NodeName("Speckle Sender")]
   [NodeDescription("Sends data to Speckle.")]
-  [NodeCategory("Speckle")]
+  [NodeCategory("Speckle.I/O")]
   [NodeSearchTags("SpeckleSender")]
   [IsDesignScriptCompatible]
   public class Sender : VariableInputNode

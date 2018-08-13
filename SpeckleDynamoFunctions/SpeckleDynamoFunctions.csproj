@@ -93,6 +93,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -104,13 +105,46 @@
     <Compile Include="Functions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SpeckleTempData.cs" />
+    <Compile Include="UserData.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- 2.0 -->
+    <PackageReference Include="DynamoVisualProgramming.Core">
+      <Version>2.0.1.5055</Version>
+    </PackageReference>
     <PackageReference Include="DynamoVisualProgramming.DynamoServices" IncludeAssets="build;compile">
+      <Version>2.0.1.5055</Version>
+    </PackageReference>
+    <PackageReference Include="DynamoVisualProgramming.ZeroTouchLibrary">
       <Version>2.0.1.5055</Version>
     </PackageReference>
     <!-- END MULTIVERSION REFERENCES -->
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\SetUserData.png" />
+    <Resource Include="Resources\SetUserData%4015x.png" />
+    <Resource Include="Resources\GetUserData%4015x.png" />
+    <Resource Include="Resources\GetUserData.png" />
+    <Content Include="SpeckleDynamo.Functions_DynamoCustomization.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="SpeckleDynamoFunctionsImages.resx" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="AfterBuild">
+    <!-- Get System.Drawing.dll -->
+    <GetReferenceAssemblyPaths TargetFrameworkMoniker=".NETFramework, Version=v2.0">
+      <Output TaskParameter="FullFrameworkReferenceAssemblyPaths" PropertyName="FrameworkAssembliesPath" />
+    </GetReferenceAssemblyPaths>
+    <!-- Get assembly -->
+    <GetAssemblyIdentity AssemblyFiles="$(OutDir)$(TargetName).dll">
+      <Output TaskParameter="Assemblies" ItemName="AssemblyInfo" />
+    </GetAssemblyIdentity>
+    <!-- Generate customization dll -->
+    <GenerateResource UseSourcePath="true" Sources="$(ProjectDir)\SpeckleDynamoFunctionsImages.resx" OutputResources="$(ProjectDir)\SpeckleDynamoFunctionsImages.resources" References="$(FrameworkAssembliesPath)System.Drawing.dll" />
+    <AL TargetType="library" EmbedResources="$(ProjectDir)\SpeckleDynamoFunctionsImages.resources" OutputAssembly="$(SolutionDir)\SpeckleDynamo\bin\$(Configuration)\SpeckleDynamo.Functions.customization.dll" Version="%(AssemblyInfo.Version)" />
+  </Target>
 </Project>
