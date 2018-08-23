@@ -11,7 +11,7 @@ install:
   - git submodule update --recursive --init
 
  # version
-version: '0.0.4.{build}'
+version: '1.0.{build}'
 assembly_info:
   patch: true
   file: '%APPVEYOR_BUILD_FOLDER%\SpeckleDynamo\Properties\AssemblyInfo.cs
