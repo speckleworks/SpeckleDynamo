@@ -17,51 +17,6 @@
     <StartAction>Program</StartAction>
     <TargetFrameworkProfile />
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <!-- START MULTI VERSION CONFIGURATION -->
-  <!-- ADDING BUILD COFIGURATION FOR EACH VERSION, DEBUG AND RELEASE -->
-  <!-- 1.3 -->
-  <!--<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug-1.3|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug-1.3\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;Version1.3</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <StartAction>Program</StartAction>
-    <StartProgram>C:\Program Files\Dynamo\Dynamo Revit\1.3\DynamoSandbox.exe</StartProgram>
-    <DynamoVersion>1.3</DynamoVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release-1.3|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release-1.3\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DynamoVersion>1.3</DynamoVersion>
-  </PropertyGroup>-->
   <!-- 2.0 -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -74,6 +29,20 @@
     <WarningLevel>4</WarningLevel>
     <StartAction>Program</StartAction>
     <StartProgram>C:\Program Files\Dynamo\Dynamo Core\2\DynamoSandbox.exe</StartProgram>
+    <DynamoVersion>2.0</DynamoVersion>
+  </PropertyGroup>
+  <!-- DynamoRevit 2.0 -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugRevit|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;Version2.0</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <StartAction>Program</StartAction>
+    <StartProgram>C:\Program Files\Autodesk\Revit 2018\Revit.exe</StartProgram>
     <DynamoVersion>2.0</DynamoVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -155,7 +124,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <None Include="pkgempty.json" />
     <None Include="SpeckleDynamoImages.resx" />
     <None Include="pkg.json" />
     <None Include="Properties\Settings.settings">
@@ -276,6 +244,12 @@
     <Resource Include="Resources\GenericIcon%40128.png" />
     <Resource Include="Resources\GenericIcon%4032.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\SetUserData%4015x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\GetUserData%4015x.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <UsingTask TaskName="ReplaceFileText" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
     <ParameterGroup>
@@ -328,12 +302,14 @@
       <SourcePdbs Include="$(TargetDir)*.pdb" />
       <SourcePkg Include="$(ProjectDir)pkg.json" />
       <SourceExtension Include="$(TargetDir)$(ProjectName)Extension_ViewExtensionDefinition.xml" />
+      <CustomizationXML Include="$(TargetDir)*DynamoCustomization.xml" />
     </ItemGroup>
     <!-- replace text in pkgempty.json -->
     <ReplaceFileText PkgInput="$(ProjectDir)pkgempty.json" PkgOutput="$(ProjectDir)pkg.json" ReplacementText="@(VersionNumber)" />
     <!--Copying to Build Folder-->
     <Copy SourceFiles="@(SourceDlls)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />
     <Copy SourceFiles="@(SourcePdbs)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />
+    <Copy SourceFiles="@(CustomizationXML)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />
     <Copy SourceFiles="@(SourcePkg)" DestinationFolder="$(TargetDir)$(PackageName)" />
     <Copy SourceFiles="@(SourceExtension)" DestinationFolder="$(TargetDir)\$(PackageName)\extra" />
     <Message Importance="High" Text="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" />
@@ -348,7 +324,7 @@
       <!--Copy to dynamo sandbox for testing -->
       <DeployFolder Condition="'$(Configuration)' == 'Debug'">$(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(PackageName)</DeployFolder>
       <!--Copy to dynamo revit for publishing -->
-      <DeployFolder Condition="'$(Configuration)' == 'Release'">$(AppData)\Dynamo\Dynamo Revit\$(DynamoVersion)\packages\$(PackageName)</DeployFolder>
+      <DeployFolder Condition="'$(Configuration)' == 'Release' Or '$(Configuration)' == 'DebugRevit'">$(AppData)\Dynamo\Dynamo Revit\$(DynamoVersion)\packages\$(PackageName)</DeployFolder>
     </PropertyGroup>
     <Copy SourceFiles="@(SourcePackage)" DestinationFolder="$(DeployFolder)\%(RecursiveDir)" />
     <Message Importance="High" Text="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" />

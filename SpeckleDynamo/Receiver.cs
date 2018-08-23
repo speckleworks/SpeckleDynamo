@@ -16,13 +16,14 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 using System.Windows;
 using System.Xml;
+using Dynamo.Models;
 
 namespace SpeckleDynamo
 {
 
   [NodeName("Speckle Receiver")]
   [NodeDescription("Receives data from Speckle.")]
-  [NodeCategory("Speckle")]
+  [NodeCategory("Speckle.I/O")]
 
   //Inputs
   [InPortNames("ID")]
@@ -30,7 +31,7 @@ namespace SpeckleDynamo
   [InPortDescriptions("Stream ID")]
 
   [IsDesignScriptCompatible]
-  public class Receiver : NodeModel, INotifyPropertyChanged
+  public class Receiver : NodeModel
   {
     private string _authToken;
     private string _restApi;
@@ -51,22 +52,23 @@ namespace SpeckleDynamo
     private List<object> ConvertedObjects;
     private bool hasNewData = false;
     private Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
-    internal string AuthToken { get => _authToken; set { _authToken = value; NotifyPropertyChanged("AuthToken"); } }
+    internal string AuthToken { get => _authToken; set { _authToken = value; RaisePropertyChanged("AuthToken"); } }
     internal bool Expired = false;
     #region public properties
-    public string RestApi { get => _restApi; set { _restApi = value; NotifyPropertyChanged("RestApi"); } }
-    public string Email { get => _email; set { _email = value; NotifyPropertyChanged("Email"); } }
-    public string Server { get => _server; set { _server = value; NotifyPropertyChanged("Server"); } }
-    public string StreamId { get => _streamId; set { _streamId = value; NotifyPropertyChanged("StreamId"); } }
-    public bool Transmitting { get => _transmitting; set { _transmitting = value; NotifyPropertyChanged("Transmitting"); } }
+    public string RestApi { get => _restApi; set { _restApi = value; RaisePropertyChanged("RestApi"); } }
+    public string Email { get => _email; set { _email = value; RaisePropertyChanged("Email"); } }
+    public string Server { get => _server; set { _server = value; RaisePropertyChanged("Server"); } }
+    public string StreamId { get => _streamId; set { _streamId = value; RaisePropertyChanged("StreamId"); } }
+    public bool Transmitting { get => _transmitting; set { _transmitting = value; RaisePropertyChanged("Transmitting"); } }
     public string DocumentName = "none";
     public string DocumentGuid = "none";
-   
+    internal RunType RunType;
+
     public string OldStreamId;
     [JsonIgnore]
-    public string Message { get => _message; set { _message = value; NotifyPropertyChanged("Message"); } }
-    public bool Paused { get => _paused; set { _paused = value; NotifyPropertyChanged("Paused"); NotifyPropertyChanged("Receiving"); } }
-    public bool StreamTextBoxEnabled { get => _streamTextBoxEnabled; set { _streamTextBoxEnabled = value; NotifyPropertyChanged("StreamTextBoxEnabled"); } }
+    public string Message { get => _message; set { _message = value; RaisePropertyChanged("Message"); } }
+    public bool Paused { get => _paused; set { _paused = value; RaisePropertyChanged("Paused"); RaisePropertyChanged("Receiving"); } }
+    public bool StreamTextBoxEnabled { get => _streamTextBoxEnabled; set { _streamTextBoxEnabled = value; RaisePropertyChanged("StreamTextBoxEnabled"); } }
     [JsonConverter(typeof(SpeckleClientConverter))]
     public SpeckleApiClient myReceiver;
     #endregion
@@ -282,7 +284,10 @@ namespace SpeckleDynamo
           Console.WriteLine("Some objects failed to convert.");
         }
 
-        this.Message = "Updating...";
+        if(RunType == RunType.Manual)
+          this.Message = "Update available since " + DateTime.Now;
+        else
+          this.Message = "Updating...";
 
         //expire node on main thread
         hasNewData = true;
@@ -453,10 +458,11 @@ namespace SpeckleDynamo
       //saved receiver
       if (myReceiver != null)
       {
-        this.DispatchOnUIThread(() => OutPorts.RemoveAll((p) => { return true; }));
+       // this.DispatchOnUIThread(() => OutPorts.RemoveAll((p) => { return true; }));
         Message = "";
         Transmitting = false;
         AuthToken = Utils.Accounts.GetAuthToken(Email, RestApi);
+        OldLayers = OutPorts.Select(x => new Layer(x.Name, x.ToolTip, "", 0, 0, 0)).ToList();
         InitReceiverEventsAndGlobals();
         return;
       }
@@ -643,15 +649,5 @@ namespace SpeckleDynamo
     }
 
     #endregion
-
-    public event PropertyChangedEventHandler PropertyChanged;
-    private void NotifyPropertyChanged(String info)
-    {
-      if (PropertyChanged != null)
-      {
-        PropertyChanged(this, new PropertyChangedEventArgs(info));
-      }
-    }
-
   }
 }

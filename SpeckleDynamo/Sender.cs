@@ -24,10 +24,10 @@ namespace SpeckleDynamo
 {
   [NodeName("Speckle Sender")]
   [NodeDescription("Sends data to Speckle.")]
-  [NodeCategory("Speckle")]
+  [NodeCategory("Speckle.I/O")]
   [NodeSearchTags("SpeckleSender")]
   [IsDesignScriptCompatible]
-  public class Sender : VariableInputNode, INotifyPropertyChanged
+  public class Sender : VariableInputNode
   {
     private string _authToken;
     private string _restApi;
@@ -49,18 +49,18 @@ namespace SpeckleDynamo
     public string DocumentName = "none";
     public string DocumentGuid = "none";
     internal string Log { get; set; }
-    internal string AuthToken { get => _authToken; set { _authToken = value; NotifyPropertyChanged("AuthToken"); } }
+    internal string AuthToken { get => _authToken; set { _authToken = value; RaisePropertyChanged("AuthToken"); } }
 
     #region public properties
-    public string RestApi { get => _restApi; set { _restApi = value; NotifyPropertyChanged("RestApi"); } }
-    public string Email { get => _email; set { _email = value; NotifyPropertyChanged("Email"); } }
-    public string Server { get => _server; set { _server = value; NotifyPropertyChanged("Server"); } }
-    public string StreamId { get => _streamId; set { _streamId = value; NotifyPropertyChanged("StreamId"); } }
-    public bool Transmitting { get => _transmitting; set { _transmitting = value; NotifyPropertyChanged("Transmitting"); } }
+    public string RestApi { get => _restApi; set { _restApi = value; RaisePropertyChanged("RestApi"); } }
+    public string Email { get => _email; set { _email = value; RaisePropertyChanged("Email"); } }
+    public string Server { get => _server; set { _server = value; RaisePropertyChanged("Server"); } }
+    public string StreamId { get => _streamId; set { _streamId = value; RaisePropertyChanged("StreamId"); } }
+    public bool Transmitting { get => _transmitting; set { _transmitting = value; RaisePropertyChanged("Transmitting"); } }
     [JsonIgnore]
-    public string Message { get => _message; set { _message = value; NotifyPropertyChanged("Message"); } }
+    public string Message { get => _message; set { _message = value; RaisePropertyChanged("Message"); } }
     [JsonIgnore]
-    public ObservableCollectionEx<InputName> Inputs { get => _inputs; set { _inputs = value; NotifyPropertyChanged("Inputs"); } }
+    public ObservableCollectionEx<InputName> Inputs { get => _inputs; set { _inputs = value; RaisePropertyChanged("Inputs"); } }
     [JsonConverter(typeof(SpeckleClientConverter))]
     public SpeckleApiClient mySender;
     #endregion
@@ -669,23 +669,12 @@ namespace SpeckleDynamo
         yield return chars.ToString();
       }
     }
-
-
-    public event PropertyChangedEventHandler PropertyChanged;
-    private void NotifyPropertyChanged(String info)
-    {
-      if (PropertyChanged != null)
-      {
-        PropertyChanged(this, new PropertyChangedEventArgs(info));
-      }
-    }
-
   }
 
   public class InputName : INotifyPropertyChanged
   {
     private string _name { get; set; }
-    public string Name { get => _name; set { _name = value; NotifyPropertyChanged("Name"); } }
+    public string Name { get => _name; set { _name = value; RaisePropertyChanged("Name"); } }
 
     public InputName(string name)
     {
@@ -693,7 +682,7 @@ namespace SpeckleDynamo
     }
 
     public event PropertyChangedEventHandler PropertyChanged;
-    private void NotifyPropertyChanged(String info)
+    private void RaisePropertyChanged(String info)
     {
       if (PropertyChanged != null)
       {
