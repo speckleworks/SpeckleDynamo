@@ -760,20 +760,20 @@ namespace SpeckleDynamo
         polylineCoordinates.AddRange(curves.Last().EndPoint.ToArray());
         curves.ForEach(c => c.Dispose());
 
-        SpecklePolyline displaValue = new SpecklePolyline(polylineCoordinates);
-        List<double> dsKnots = curve.Knots().ToList();
-        dsKnots.RemoveAt(dsKnots.Count - 1);
-        dsKnots.RemoveAt(0);
+      SpecklePolyline displayValue = new SpecklePolyline(polylineCoordinates);
+      List<double> dsKnots = curve.Knots().ToList();
+      dsKnots.RemoveAt(dsKnots.Count - 1);
+      dsKnots.RemoveAt(0);
 
-        SpeckleCurve spkCurve = new SpeckleCurve(displaValue);
-        spkCurve.Weights = curve.Weights().ToList();
-        spkCurve.Points = curve.ControlPoints().ToFlatArray().ToList();
-        spkCurve.Knots = dsKnots;
-        spkCurve.Degree = curve.Degree;
-        spkCurve.Periodic = curve.IsPeriodic;
-        spkCurve.Rational = curve.IsRational;
-        spkCurve.Closed = curve.IsClosed;
-        //spkCurve.Domain
+      SpeckleCurve spkCurve = new SpeckleCurve(displayValue);
+      spkCurve.Weights = curve.Weights().ToList();
+      spkCurve.Points = curve.ControlPoints().ToFlatArray().ToList();
+      spkCurve.Knots = dsKnots;
+      spkCurve.Degree = curve.Degree;
+      spkCurve.Periodic = curve.IsPeriodic;
+      spkCurve.Rational = curve.IsRational;
+      spkCurve.Closed = curve.IsClosed;
+      spkCurve.Domain = new SpeckleInterval( curve.StartParameter(), curve.EndParameter() );
         //spkCurve.Properties
 
         spkCurve.GenerateHash();
