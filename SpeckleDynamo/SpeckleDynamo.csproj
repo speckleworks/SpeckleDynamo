@@ -155,6 +155,7 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="pkgempty.json" />
     <None Include="SpeckleDynamoImages.resx" />
     <None Include="pkg.json" />
     <None Include="Properties\Settings.settings">
@@ -277,27 +278,25 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <UsingTask TaskName="ReplaceFileText" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
-  <ParameterGroup>
-    <PkgInput ParameterType="System.String" Required="true" />
-    <PkgOutput ParameterType="System.String" Required="true" />
-    <ReplacementText ParameterType="System.String" Required="true" />
-  </ParameterGroup>
-  <Task>
-    <Reference Include="System.Core" />
-    <Using Namespace="System" />
-    <Using Namespace="System.IO" />
-    <Using Namespace="System.Text.RegularExpressions" />
-    <!-- replace version number in pkg.json -->
-    <Code Type="Fragment" Language="cs">
-      <![CDATA[
+    <ParameterGroup>
+      <PkgInput ParameterType="System.String" Required="true" />
+      <PkgOutput ParameterType="System.String" Required="true" />
+      <ReplacementText ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="System.Core" />
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Text.RegularExpressions" />
+      <!-- replace version number in pkg.json -->
+      <Code Type="Fragment" Language="cs"><![CDATA[
             File.WriteAllText(
                 PkgOutput,
                 File.ReadAllText(PkgInput).Replace("{{{version}}}",ReplacementText).Replace("{{{semversion}}}",ReplacementText.Substring(0, ReplacementText.LastIndexOf(".")))
                 );
-          ]]>
-    </Code>
-  </Task>
-</UsingTask>
+          ]]></Code>
+    </Task>
+  </UsingTask>
   <Target Name="AfterBuild">
     <!-- Get System.Drawing.dll -->
     <GetReferenceAssemblyPaths TargetFrameworkMoniker=".NETFramework, Version=v2.0">
@@ -318,7 +317,7 @@
       <Output TaskParameter="Assemblies" ItemName="Targets" />
     </GetAssemblyIdentity>
     <ItemGroup>
-      <VersionNumber Include="@(Targets->'%(Version)')"/>
+      <VersionNumber Include="@(Targets->'%(Version)')" />
     </ItemGroup>
     <Message Importance="High" Text="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" />
     <Message Importance="High" Text="HELLO, THE ASSEMBLY VERSION IS @(VersionNumber)" />
@@ -331,16 +330,12 @@
       <SourceExtension Include="$(TargetDir)$(ProjectName)Extension_ViewExtensionDefinition.xml" />
     </ItemGroup>
     <!-- replace text in pkgempty.json -->
-    <ReplaceFileText
-    PkgInput="$(ProjectDir)pkgempty.json"
-    PkgOutput="$(ProjectDir)pkg.json"
-    ReplacementText="@(VersionNumber)" />
+    <ReplaceFileText PkgInput="$(ProjectDir)pkgempty.json" PkgOutput="$(ProjectDir)pkg.json" ReplacementText="@(VersionNumber)" />
     <!--Copying to Build Folder-->
     <Copy SourceFiles="@(SourceDlls)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />
     <Copy SourceFiles="@(SourcePdbs)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />
     <Copy SourceFiles="@(SourcePkg)" DestinationFolder="$(TargetDir)$(PackageName)" />
     <Copy SourceFiles="@(SourceExtension)" DestinationFolder="$(TargetDir)\$(PackageName)\extra" />
-
     <Message Importance="High" Text="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" />
     <Message Importance="High" Text="PACKAGE BUILT IN $(TargetDir)$(PackageName)" />
     <CallTarget Targets="PackageDeploy" Condition="'$(CI)' != 'True'" />
@@ -350,12 +345,11 @@
       <SourcePackage Include="$(TargetDir)\$(PackageName)\**\*" />
     </ItemGroup>
     <PropertyGroup>
-        <!--Copy to dynamo sandbox for testing -->
+      <!--Copy to dynamo sandbox for testing -->
       <DeployFolder Condition="'$(Configuration)' == 'Debug'">$(AppData)\Dynamo\Dynamo Core\$(DynamoVersion)\packages\$(PackageName)</DeployFolder>
-        <!--Copy to dynamo revit for publishing -->
+      <!--Copy to dynamo revit for publishing -->
       <DeployFolder Condition="'$(Configuration)' == 'Release'">$(AppData)\Dynamo\Dynamo Revit\$(DynamoVersion)\packages\$(PackageName)</DeployFolder>
     </PropertyGroup>
-
     <Copy SourceFiles="@(SourcePackage)" DestinationFolder="$(DeployFolder)\%(RecursiveDir)" />
     <Message Importance="High" Text="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" />
     <Message Importance="High" Text="PACKAGE DEPLOYED TO $(DeployFolder)" />
