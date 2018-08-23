@@ -17,7 +17,6 @@ assembly_info:
   file: '%APPVEYOR_BUILD_FOLDER%\SpeckleDynamo\Properties\AssemblyInfo.cs'
   assembly_version: '{version}'
   assembly_file_version: '{version}'
-  assembly_informational_version: '{version}-rc1'
 
 
 # Build Configuration
