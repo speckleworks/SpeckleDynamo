@@ -23,7 +23,7 @@ namespace SpeckleDynamo
 
   [NodeName("Speckle Receiver")]
   [NodeDescription("Receives data from Speckle.")]
-  [NodeCategory("Speckle")]
+  [NodeCategory("Speckle.I/O")]
 
   //Inputs
   [InPortNames("ID")]

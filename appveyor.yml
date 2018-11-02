@@ -1,5 +1,5 @@
 # General Configuration
-version: '{build}'
+version: 0.0.5.{build}
 skip_branch_with_pr: true
 
 # Environment Configuration
@@ -11,10 +11,18 @@ install:
   #init and update submodules
   - git submodule update --recursive --init
 
+ # version
+assembly_info:
+  patch: true
+  file: AssemblyInfo.*
+  assembly_version: '{version}'
+  assembly_file_version: '{version}'
+
 
 # Build Configuration
 platform: Any CPU
 configuration: Release
+
 
 before_build:
   - nuget restore
