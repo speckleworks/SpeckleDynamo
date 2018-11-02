@@ -14,6 +14,7 @@ namespace SpeckleDynamo.Data
   public static class UserData
   {
     public const string speckleKey = "speckle";
+    public const string typeException = "UserData can only be exist on Geometry or Mesh objects. Input type: {0}.";
 
     /// <summary>
     /// Defines custom user properties to the input geometry
@@ -24,14 +25,28 @@ namespace SpeckleDynamo.Data
     [NodeName("Set")]
     [NodeCategory("Speckle.UserData")]
     [NodeDescription("Defines custom user properties to the input geometry")]
-    public static Geometry Set (Geometry geometry, [DefaultArgument("{}")]DesignScript.Builtin.Dictionary dictionary)
+    public static object Set (object geometry, [DefaultArgument("{}")]DesignScript.Builtin.Dictionary dictionary)
     {
       if (geometry == null) { throw new ArgumentNullException("geometry"); }
+      if (!(geometry is DesignScriptEntity))
+      {
+        throw new ArgumentException(String.Format(typeException, geometry.GetType()), "geometry");
+      }
       if (dictionary == null) { throw new ArgumentNullException("dictionary"); }
       
       if(dictionary.Count > 0)
       {
-        Geometry newGeo = geometry.Translate();
+        DesignScriptEntity newGeo;
+        if (geometry is Mesh)
+        {
+          Mesh inputMesh = geometry as Mesh;
+          newGeo = Mesh.ByPointsFaceIndices(inputMesh.VertexPositions, inputMesh.FaceIndices);
+        }
+        else
+        {
+          Geometry inputGeometry = geometry as Geometry;
+          newGeo = inputGeometry.Translate();
+        }
         newGeo.Tags.AddTag(speckleKey, dictionary);
         return newGeo;
       }
@@ -47,11 +62,17 @@ namespace SpeckleDynamo.Data
     /// <param name="geometry">Geometry</param>
     /// <returns name="dictionary">Dictionary with custom properties. Null if no property found on the geometry.</returns>
     [NodeDescription("Returns a Dictionary with the custom user properties attached to the geometry, if any.")]
-    public static DesignScript.Builtin.Dictionary Get(Geometry geometry)
+    public static Dictionary Get(object geometry)
     {
       if (geometry == null) { throw new ArgumentNullException("geometry"); }
-      var dict = (Dictionary)geometry.Tags.LookupTag(speckleKey);
-      if(dict == null)
+      if (!(geometry is DesignScriptEntity))
+      {
+        throw new ArgumentException(String.Format(typeException, geometry.GetType()), "geometry");
+      }
+
+      DesignScriptEntity dsEntity = geometry as DesignScriptEntity;
+      var dict = (Dictionary)dsEntity.Tags.LookupTag(speckleKey);
+      if (dict == null)
       {
         return null;
       }
