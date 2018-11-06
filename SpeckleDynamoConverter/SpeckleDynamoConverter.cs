@@ -367,7 +367,7 @@ namespace SpeckleDynamo
       var points = polyline.Value.ToPoints();
       var polycurve = PolyCurve.ByPoints(points);
 
-      // If closed and planar, make polygon
+      // If closed, can be a polygon
       if (polyline.Closed)
       {
         // If planar, make a polygon.
@@ -387,7 +387,9 @@ namespace SpeckleDynamo
         }
         else
         {
-          return polycurve.CloseWithLine().SetSpeckleProperties<PolyCurve>(polyline.Properties);
+          PolyCurve closed =  polycurve.CloseWithLine().SetSpeckleProperties<PolyCurve>(polyline.Properties);
+          polycurve.Dispose();
+          return closed;
         }
       }
       else
