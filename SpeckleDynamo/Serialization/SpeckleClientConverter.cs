@@ -71,6 +71,8 @@ namespace SpeckleDynamo.Serialization
     public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
     {
       var client = (SpeckleApiClient)value;
+      //remove auth token from saved files
+      client.AuthToken = "";
 
       using (var input = new MemoryStream())
       {
