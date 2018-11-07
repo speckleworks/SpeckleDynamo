@@ -14,7 +14,7 @@ install:
  # version
 assembly_info:
   patch: true
-  file: AssemblyInfo.*
+  file: AssemblyVersionInfo.*
   assembly_version: '{version}'
   assembly_file_version: '{version}'
 
