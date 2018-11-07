@@ -10,6 +10,7 @@ using SpeckleDynamo.Utils;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
@@ -44,7 +45,6 @@ namespace SpeckleDynamo
     private bool _registeringPorts = false;
     private List<int> branchIndexes = new List<int>();
     private Dictionary<string, int> branches = new Dictionary<string, int>();
-    private ObservableCollectionEx<InputName> _inputs = new ObservableCollectionEx<InputName> { new InputName("A"), new InputName("B"), new InputName("C") };
     internal Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
     public string DocumentName = "none";
     public string DocumentGuid = "none";
@@ -59,8 +59,7 @@ namespace SpeckleDynamo
     public bool Transmitting { get => _transmitting; set { _transmitting = value; RaisePropertyChanged("Transmitting"); } }
     [JsonIgnore]
     public string Message { get => _message; set { _message = value; RaisePropertyChanged("Message"); } }
-    [JsonIgnore]
-    public ObservableCollectionEx<InputName> Inputs { get => _inputs; set { _inputs = value; RaisePropertyChanged("Inputs"); } }
+
     [JsonConverter(typeof(SpeckleClientConverter))]
     public SpeckleApiClient mySender;
     #endregion
@@ -83,9 +82,6 @@ namespace SpeckleDynamo
       InPorts.Add(new PortModel(PortType.Input, this, new PortData("C", "")));
 
       RegisterAllPorts();
-
-      Inputs.CollectionChanged += Inputs_CollectionChanged;
-
       ArgumentLacing = LacingStrategy.Disabled;
     }
 
@@ -451,6 +447,7 @@ namespace SpeckleDynamo
       catch(Exception ex)
       {
         Error(ex.Message);
+        Transmitting = false;
       }
     }
 
@@ -491,10 +488,9 @@ namespace SpeckleDynamo
     #region overrides
 
 
-    private void Inputs_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    public void RenameLayers(List<string> layers)
     {
-      if (Inputs.Count == InPorts.Count && string.Join(".", Inputs.Select(x => x.Name)) != string.Join(".", InPorts.Select(x => x.Name)))
-      {
+
         _registeringPorts = true;
         //collect connections
         List<List<PortModel>> startPorts = new List<List<PortModel>>();
@@ -507,9 +503,9 @@ namespace SpeckleDynamo
         InPorts.RemoveAll((p) => { return true; });
 
         //add new ports and old connections
-        for (var i = 0; i < Inputs.Count; i++)
+        for (var i = 0; i < layers.Count; i++)
         {
-          InPorts.Add(new PortModel(PortType.Input, this, new PortData(Inputs[i].Name, "")));
+          InPorts.Add(new PortModel(PortType.Input, this, new PortData(layers[i], "")));
           foreach (var s in startPorts[i])
             InPorts.Last().Connectors.Add(new ConnectorModel(s,InPorts.Last(),Guid.NewGuid()));
         }       
@@ -517,7 +513,7 @@ namespace SpeckleDynamo
         _registeringPorts = false;
         Transmitting = true;
         UpdateMetadata();
-      }
+      
 
     }
 
@@ -525,7 +521,6 @@ namespace SpeckleDynamo
     {
       var name = GetSequence().ElementAt(InPorts.Count);
       InPorts.Add(new PortModel(PortType.Input, this, new PortData(name, "Layer "+ name)));
-      Inputs.Add(new InputName(InPorts.Last().Name));
 
       if (MetadataSender != null)
         UpdateMetadata();
@@ -536,7 +531,6 @@ namespace SpeckleDynamo
       if (InPorts.Count > 1)
       {
         base.RemoveInput();
-        Inputs.RemoveAt(Inputs.Count - 1);
       }
 
       if (MetadataSender != null)

@@ -91,6 +91,9 @@
     <Compile Include="UserControls\ContextMenuItem.xaml.cs">
       <DependentUpon>ContextMenuItem.xaml</DependentUpon>
     </Compile>
+    <Compile Include="UserControls\RenameLayers.xaml.cs">
+      <DependentUpon>RenameLayers.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UserControls\StreamsUi.xaml.cs">
       <DependentUpon>StreamsUi.xaml</DependentUpon>
     </Compile>
@@ -98,7 +101,6 @@
       <DependentUpon>SenderUi.xaml</DependentUpon>
     </Compile>
     <Compile Include="Utils\Accounts.cs" />
-    <Compile Include="Utils\ObservableCollectionEx.cs" />
     <Compile Include="ValueConverters\BoolVisibConverter.cs" />
     <Compile Include="ValueConverters\InverseBooleanConverter.cs" />
     <Compile Include="ViewCustomizations\StreamsViewCustomization.cs" />
@@ -195,6 +197,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="UserControls\ContextMenuItem.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UserControls\RenameLayers.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
