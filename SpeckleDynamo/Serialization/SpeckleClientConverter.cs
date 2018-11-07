@@ -71,8 +71,9 @@ namespace SpeckleDynamo.Serialization
     public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
     {
       var client = (SpeckleApiClient)value;
-      //remove auth token from saved files
-      client.AuthToken = "";
+      //cannot remove auth token from saved files as below since this method gets triggered 
+      //also when moving the node on the canvas etc...
+      //client.AuthToken = "";
 
       using (var input = new MemoryStream())
       {
