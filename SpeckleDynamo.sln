@@ -17,6 +17,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpeckleDynamoConverter", "S
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{570200D1-4004-4DBF-9E1C-5E5F4B3448AE}"
 	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
 		AssemblyVersionInfo.cs = AssemblyVersionInfo.cs
 	EndProjectSection
 EndProject

@@ -147,9 +147,14 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Utilities.cs" />
     <Compile Include="ValueConverters\BoolVisibConverter.cs" />
     <Compile Include="ValueConverters\InverseBooleanConverter.cs" />
+    <Compile Include="ViewModels\NodeManagerViewModel.cs" />
     <Compile Include="ViewModels\RecevierViewModel.cs" />
+    <Compile Include="Windows\NodeManager.xaml.cs">
+      <DependentUpon>NodeManager.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Windows\Receiver.xaml.cs">
       <DependentUpon>Receiver.xaml</DependentUpon>
     </Compile>
@@ -185,6 +190,10 @@
   </ItemGroup>
   <ItemGroup>
     <Page Include="Resources.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\NodeManager.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

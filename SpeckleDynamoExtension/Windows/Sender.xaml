@@ -36,6 +36,7 @@
       <RowDefinition Height="auto" />
       <RowDefinition Height="auto" />
       <RowDefinition Height="auto" />
+      <RowDefinition Height="auto" />
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
     <Rectangle
@@ -70,7 +71,13 @@
       VerticalAlignment="Top"
       Click="CancelButton_Click"
       Content="Close" />
-    <Grid Grid.Row="1" Margin="20,10">
+    <TextBlock
+      Grid.Row="1"
+      Padding="20"
+      Foreground="White"
+      Text="Select some Dynamo nodes and click the button to send them! ~ NB this node is experimental! ~"
+      TextWrapping="Wrap" />
+    <Grid Grid.Row="2" Margin="20,10">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="*" />
         <ColumnDefinition Width="auto" />
@@ -99,7 +106,7 @@
 
     <Button
       Name="ForceSend"
-      Grid.Row="2"
+      Grid.Row="3"
       Width="30"
       Height="30"
       Margin="5"
@@ -116,7 +123,7 @@
       </Grid>
     </Button>
     <Label
-      Grid.Row="3"
+      Grid.Row="4"
       Margin="20,10"
       Content="{Binding Message, FallbackValue='Sending data...'}"
       Foreground="White" />
