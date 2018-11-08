@@ -79,178 +79,189 @@
       </TabItem>
       <TabItem Header="Register">
         <Grid Background="White">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="50" />
+            <RowDefinition Height="40" />
+            <RowDefinition Height="40" />
+            <RowDefinition Height="40" />
+            <RowDefinition Height="40" />
+            <RowDefinition Height="40" />
+            <RowDefinition Height="40" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="60" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="auto" />
+          </Grid.ColumnDefinitions>
+
+
+
           <TextBox
             x:Name="RegisterServerUrl"
-            Width="182"
-            Height="23"
-            Margin="78,41,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            TextWrapping="Wrap" />
+            Grid.Row="1"
+            Grid.Column="1"
+            Margin="5"
+            VerticalAlignment="Center" />
+          <TextBox
+            x:Name="RegisterEmail"
+            Grid.Row="2"
+            Grid.Column="1"
+            Margin="5"
+            VerticalAlignment="Center" />
+          <TextBox
+            x:Name="RegisterName"
+            Grid.Row="3"
+            Grid.Column="1"
+            Margin="5"
+            VerticalAlignment="Center" />
+          <TextBox
+            x:Name="RegisterCompany"
+            Grid.Row="4"
+            Grid.Column="1"
+            Margin="5"
+            VerticalAlignment="Center" />
+          <PasswordBox
+            x:Name="RegisterPassword"
+            Grid.Row="5"
+            Grid.Column="1"
+            Margin="5"
+            VerticalAlignment="Center" />
+          <PasswordBox
+            x:Name="RegisterPasswordConfirm"
+            Grid.Row="6"
+            Grid.Column="1"
+            Margin="5"
+            VerticalAlignment="Center" />
           <Label
-            Height="23"
-            Margin="8,41,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
+            Grid.Row="1"
+            Grid.Column="0"
+            VerticalAlignment="Center"
             Content="Server Url"
             FontSize="8"
             FontWeight="Bold" />
-          <TextBox
-            x:Name="RegisterEmail"
-            Width="182"
-            Height="24"
-            Margin="78,83,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            TextWrapping="Wrap" />
+
           <Label
-            Height="24"
-            Margin="8,83,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
+            Grid.Row="2"
+            Grid.Column="0"
+            VerticalAlignment="Center"
             Content="Email"
             FontSize="8"
             FontWeight="Bold" />
-          <TextBox
-            x:Name="RegisterName"
-            Width="182"
-            Height="24"
-            Margin="78,126,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            TextWrapping="Wrap" />
+
           <Label
-            Height="24"
-            Margin="8,126,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
+            Grid.Row="3"
+            Grid.Column="0"
+            VerticalAlignment="Center"
             Content="Name"
             FontSize="8"
             FontWeight="Bold" />
-          <TextBox
-            x:Name="RegisterCompany"
-            Width="182"
-            Height="24"
-            Margin="78,169,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            TextWrapping="Wrap" />
+
           <Label
-            Height="24"
-            Margin="8,169,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
+            Grid.Row="4"
+            Grid.Column="0"
+            VerticalAlignment="Center"
             Content="Company"
             FontSize="8"
             FontWeight="Bold" />
-          <PasswordBox
-            x:Name="RegisterPassword"
-            Width="182"
-            Height="24"
-            Margin="78,212,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top" />
-          <PasswordBox
-            x:Name="RegisterPasswordConfirm"
-            Width="182"
-            Height="22"
-            Margin="78,255,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top" />
+
           <Label
-            Height="24"
-            Margin="8,212,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
+            Grid.Row="5"
+            Grid.Column="0"
+            VerticalAlignment="Center"
             Content="Password"
             FontSize="8"
             FontWeight="Bold" />
           <Label
-            Width="68"
-            Height="24"
-            Margin="8,255,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
+            Grid.Row="6"
+            Grid.Column="0"
+            VerticalAlignment="Center"
             Content="Confirm"
             FontSize="8"
             FontWeight="Bold" />
           <Button
             x:Name="RegisterButton"
-            Width="76"
-            Margin="288,259,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
+            Grid.Row="6"
+            Grid.Column="2"
+            Width="75"
+            Margin="20,5"
+            Padding="10,0"
+            VerticalAlignment="Center"
             Click="RegisterButton_Click"
             Content="Register"
             IsDefault="True" />
-          <Label
-            Margin="10,6,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            Content="Create a new account!" />
+          <Label Grid.ColumnSpan="3" Content="Create a new account!" />
         </Grid>
       </TabItem>
       <TabItem Header="Login">
+
         <Grid Background="White">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="50" />
+            <RowDefinition Height="40" />
+            <RowDefinition Height="40" />
+            <RowDefinition Height="40" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="60" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="auto" />
+          </Grid.ColumnDefinitions>
 
           <TextBox
             x:Name="LoginServerUrl"
-            Width="182"
-            Height="23"
-            Margin="78,41,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            TextWrapping="Wrap" />
+            Grid.Row="1"
+            Grid.Column="1"
+            Margin="5"
+            VerticalAlignment="Center" />
+          <TextBox
+            x:Name="LoginEmail"
+            Grid.Row="2"
+            Grid.Column="1"
+            Margin="5"
+            VerticalAlignment="Center" />
+          <PasswordBox
+            x:Name="LoginPassword"
+            Grid.Row="3"
+            Grid.Column="1"
+            Margin="5"
+            VerticalAlignment="Center" />
           <Label
-            Height="23"
-            Margin="8,41,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
+            Grid.Row="1"
+            Grid.Column="0"
+            VerticalAlignment="Center"
             Content="Server Url"
             FontSize="8"
             FontWeight="Bold" />
-          <TextBox
-            x:Name="LoginEmail"
-            Width="182"
-            Height="24"
-            Margin="78,83,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            TextWrapping="Wrap" />
-          <PasswordBox
-            x:Name="LoginPassword"
-            Width="182"
-            Height="24"
-            Margin="78,126,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top" />
+
           <Label
-            Height="24"
-            Margin="8,83,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
+            Grid.Row="2"
+            Grid.Column="0"
+            VerticalAlignment="Center"
             Content="Email"
             FontSize="8"
             FontWeight="Bold" />
           <Label
-            Height="24"
-            Margin="8,126,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
+            Grid.Row="3"
+            Grid.Column="0"
+            VerticalAlignment="Center"
             Content="Password"
             FontSize="8"
             FontWeight="Bold" />
           <Button
             x:Name="LoginButton"
-            Width="76"
-            Margin="293,130,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
+            Grid.Row="3"
+            Grid.Column="2"
+            Width="75"
+            Margin="20,5"
+            Padding="10,0"
+            VerticalAlignment="Center"
             Click="LoginButton_Click"
             Content="Login"
             IsDefault="True" />
           <Label
-            Margin="10,6,0,0"
+            Grid.ColumnSpan="3"
             HorizontalAlignment="Left"
             VerticalAlignment="Top"
             Content="Login into an existing account." />

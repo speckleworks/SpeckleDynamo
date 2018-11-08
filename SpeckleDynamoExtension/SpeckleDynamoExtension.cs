@@ -32,6 +32,11 @@ namespace SpeckleDynamoExtension
 
     public void Loaded(ViewLoadedParams p)
     {
+#if !DEBUG
+      //check for updates in the background
+      Api.Api.CheckForUpdates();
+#endif
+
       speckleAccountsMenu = new MenuItem { Header = "Speckle Accounts" };
       speckleAccountsMenu.Click += (sender, args) =>
       {

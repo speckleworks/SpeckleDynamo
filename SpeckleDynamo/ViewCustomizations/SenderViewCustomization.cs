@@ -3,11 +3,14 @@ using Dynamo.ViewModels;
 using Dynamo.Wpf;
 using Dynamo.Nodes;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Windows;
 using SpeckleDynamo.UserControls;
 using SpecklePopup;
 using System.Windows.Controls;
+using System.Collections.ObjectModel;
+using SpeckleDynamo.Utils;
 
 namespace SpeckleDynamo
 {
@@ -40,10 +43,19 @@ namespace SpeckleDynamo
 
       nodeView.inputGrid.Children.Add(ui);
       nodeView.grid.ContextMenu.Items.Add(new Separator());
-      var mi = new MenuItem { Header = "Rename Inputs..." };
-      var inputs = new ContextMenuItem();
-      inputs.DataContext = _sender;
-      mi.Items.Add(inputs);
+      var mi = new MenuItem { Header = "Rename Layers (Inputs)..." };
+      mi.Click += (s, e) =>
+       {
+         var rl = new RenameLayers(_sender.InPorts.Select(x => x.Name));
+         rl.Owner = Window.GetWindow(nodeView);
+         rl.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+         rl.Title = _sender.Name + " | Rename Layers";
+         var result = rl.ShowDialog();
+         if(result.HasValue && result.Value)
+         {
+           _sender.RenameLayers(rl.Layers.Select(x=>x.Name).ToList());
+         }
+       };
       nodeView.grid.ContextMenu.Items.Add(mi);
     }
     public void Dispose()

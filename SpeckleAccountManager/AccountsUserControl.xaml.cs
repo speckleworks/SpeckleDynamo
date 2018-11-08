@@ -19,6 +19,7 @@ namespace SpecklePopup
   /// </summary>
   public partial class AccountsUserControl : UserControl
   {
+    private string _defaultServer = "https://hestia.speckle.works/api/v1";
     List<string> existingServers = new List<string>();
     List<string> existingServers_fullDetails = new List<string>();
     internal ObservableCollection<SpeckleAccount> accounts = new ObservableCollection<SpeckleAccount>();
@@ -36,6 +37,9 @@ namespace SpecklePopup
     public AccountsUserControl()
     {
       InitializeComponent();
+
+      RegisterServerUrl.Text = _defaultServer;
+      LoginServerUrl.Text = _defaultServer;
 
       //only show in popupmode
       ButonUseSelected.Visibility = Visibility.Collapsed;
