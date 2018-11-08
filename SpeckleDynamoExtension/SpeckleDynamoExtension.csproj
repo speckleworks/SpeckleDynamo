@@ -147,6 +147,12 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="..\AssemblyVersionInfo.cs">
+      <Link>Properties\AssemblyVersionInfo.cs</Link>
+    </Compile>
+    <Compile Include="Api\Api.cs" />
+    <Compile Include="Api\AppVeyor.cs" />
+    <Compile Include="Api\AppVeyorBuild.cs" />
     <Compile Include="Utilities.cs" />
     <Compile Include="ValueConverters\BoolVisibConverter.cs" />
     <Compile Include="ValueConverters\InverseBooleanConverter.cs" />

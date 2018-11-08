@@ -36,6 +36,11 @@ namespace SpeckleDynamoExtension
 
     public void Loaded(ViewLoadedParams viewLoadedParams)
     {
+#if !DEBUG
+      //check for updates in the background
+      Api.Api.CheckForUpdates();
+#endif
+
       //new node manager
       var nodeManagerViewModel = new NodeManagerViewModel(viewLoadedParams);
       _nodeManager = new NodeManager
