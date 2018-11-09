@@ -1,5 +1,5 @@
 # General Configuration
-version: 0.0.5.{build}
+version: 0.0.6.{build}
 skip_branch_with_pr: true
 
 # Environment Configuration
@@ -14,7 +14,7 @@ install:
  # version
 assembly_info:
   patch: true
-  file: AssemblyInfo.*
+  file: AssemblyVersionInfo.*
   assembly_version: '{version}'
   assembly_file_version: '{version}'
 

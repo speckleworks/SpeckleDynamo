@@ -63,7 +63,8 @@ namespace SpeckleDynamo
       return ((max - min) * 0.5) + min;
     }
 
-    public static Dictionary<string, object> ToSpeckle(this DesignScript.Builtin.Dictionary dict)
+    /// SpeckleCore does not currently support dictionaries, therofere avoiding the canonical ToSpeckle
+    public static Dictionary<string, object> ToSpeckleX(this DesignScript.Builtin.Dictionary dict)
     {
       if(dict == null) { return null; }
       var speckleDict = new Dictionary<string, object>();
@@ -72,7 +73,7 @@ namespace SpeckleDynamo
         object value = dict.ValueAtKey(key);
         if(value is DesignScript.Builtin.Dictionary)
         {
-          value = (value as DesignScript.Builtin.Dictionary).ToSpeckle();
+          value = (value as DesignScript.Builtin.Dictionary).ToSpeckleX();
         }
         else if (value is Geometry)
         {
@@ -83,7 +84,8 @@ namespace SpeckleDynamo
       return speckleDict;
     }
 
-    public static DesignScript.Builtin.Dictionary ToNative(this Dictionary<string, object> speckleDict)
+    /// SpeckleCore does not currently support dictionaries, therofere avoiding the canonical ToNative
+    public static DesignScript.Builtin.Dictionary ToNativeX(this Dictionary<string, object> speckleDict)
     {
       if (speckleDict == null) { return null; }
       var keys = new List<string>();
@@ -93,7 +95,7 @@ namespace SpeckleDynamo
         object value = pair.Value;
         if (value is Dictionary<string, object>)
         {
-          value = (value as Dictionary<string, object>).ToNative();
+          value = (value as Dictionary<string, object>).ToNativeX();
         }
         else if(value is SpeckleObject)
         {
@@ -108,14 +110,14 @@ namespace SpeckleDynamo
     public static Dictionary<string, object> GetSpeckleProperties(this Geometry geometry)
     {
       var userData =  geometry.Tags.LookupTag(speckleKey) as DesignScript.Builtin.Dictionary;
-      return userData.ToSpeckle();
+      return userData.ToSpeckleX();
     }
 
     public static T SetSpeckleProperties<T>(this Geometry geometry, Dictionary<string, object> properties)
     {
       if(properties != null)
       {
-        geometry.Tags.AddTag(speckleKey, properties.ToNative());
+        geometry.Tags.AddTag(speckleKey, properties.ToNativeX());
       }
       return (T) Convert.ChangeType(geometry, typeof(T));
     }
@@ -365,21 +367,31 @@ namespace SpeckleDynamo
     public static Curve ToNative(this SpecklePolyline polyline)
     {
       var points = polyline.Value.ToPoints();
-      var polycurve = PolyCurve.ByPoints(polyline.Value.ToPoints());
+      var polycurve = PolyCurve.ByPoints(points);
 
-      // If closed and planar, make polygon
-      if (polyline.Closed && polycurve.IsPlanar)
+      // If closed, can be a polygon
+      if (polyline.Closed)
       {
-        polycurve.Dispose(); // geometry not needed. Freeing memory.
-        double dot = Vector.ByTwoPoints(points[0], points[1]).Dot(Vector.ByTwoPoints(points[1], points[2]));
-
-        if (points.Count() == 4 && Threshold(dot, 0))
+        // If planar, make a polygon.
+        if (polycurve.IsPlanar)
         {
-          return Rectangle.ByCornerPoints(points).SetSpeckleProperties<Rectangle>(polyline.Properties);
+          polycurve.Dispose(); // geometry not needed. Freeing memory.
+          double dot = Vector.ByTwoPoints(points[0], points[1]).Dot(Vector.ByTwoPoints(points[1], points[2]));
+
+          if (points.Count() == 4 && Threshold(dot, 0))
+          {
+            return Rectangle.ByCornerPoints(points).SetSpeckleProperties<Rectangle>(polyline.Properties);
+          }
+          else
+          {
+            return Polygon.ByPoints(points).SetSpeckleProperties<Polygon>(polyline.Properties);
+          }
         }
         else
         {
-          return Polygon.ByPoints(polyline.Value.ToPoints()).SetSpeckleProperties<Polygon>(polyline.Properties);
+          PolyCurve closed =  polycurve.CloseWithLine().SetSpeckleProperties<PolyCurve>(polyline.Properties);
+          polycurve.Dispose();
+          return closed;
         }
       }
       else

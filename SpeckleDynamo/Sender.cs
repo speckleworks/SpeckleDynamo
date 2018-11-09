@@ -10,6 +10,7 @@ using SpeckleDynamo.Utils;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
@@ -44,7 +45,6 @@ namespace SpeckleDynamo
     private bool _registeringPorts = false;
     private List<int> branchIndexes = new List<int>();
     private Dictionary<string, int> branches = new Dictionary<string, int>();
-    private ObservableCollectionEx<InputName> _inputs = new ObservableCollectionEx<InputName> { new InputName("A"), new InputName("B"), new InputName("C") };
     internal Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
     public string DocumentName = "none";
     public string DocumentGuid = "none";
@@ -59,8 +59,7 @@ namespace SpeckleDynamo
     public bool Transmitting { get => _transmitting; set { _transmitting = value; RaisePropertyChanged("Transmitting"); } }
     [JsonIgnore]
     public string Message { get => _message; set { _message = value; RaisePropertyChanged("Message"); } }
-    [JsonIgnore]
-    public ObservableCollectionEx<InputName> Inputs { get => _inputs; set { _inputs = value; RaisePropertyChanged("Inputs"); } }
+
     [JsonConverter(typeof(SpeckleClientConverter))]
     public SpeckleApiClient mySender;
     #endregion
@@ -83,9 +82,6 @@ namespace SpeckleDynamo
       InPorts.Add(new PortModel(PortType.Input, this, new PortData("C", "")));
 
       RegisterAllPorts();
-
-      Inputs.CollectionChanged += Inputs_CollectionChanged;
-
       ArgumentLacing = LacingStrategy.Disabled;
     }
 
@@ -255,7 +251,14 @@ namespace SpeckleDynamo
       //saved sender
       if (mySender != null)
       {
-        AuthToken = Utils.Accounts.GetAuthToken(Email, RestApi);
+        AuthToken = mySender.AuthToken = Utils.Accounts.GetAuthToken(Email, RestApi);
+        if (string.IsNullOrEmpty(AuthToken))
+        {
+          Warning(@"This sender was created under another account ¯\_(⊙︿⊙)_/¯. Either add it to your Speckle Accounts or create a new sender.");
+          Message = "Account error";
+          return;
+        }
+          
         InitializeSender(false);
         Message = "";
         return;
@@ -305,7 +308,7 @@ namespace SpeckleDynamo
           //this.Locked = false;
           Name = "Anonymous Stream";
           ExpireNode();
-          //Rhino.RhinoApp.MainApplicationWindow.Invoke(ExpireComponentAction);
+
         };
 
       mySender.OnWsMessage += OnWsMessage;
@@ -340,103 +343,112 @@ namespace SpeckleDynamo
 
     private void DataSender_Elapsed(object sender, ElapsedEventArgs e)
     {
-      if (MetadataSender.Enabled)
+      try
       {
-        //  start the timer again, as we need to make sure we're updating
-        DataSender.Start();
-        return;
-      }
 
-      this.Message = String.Format("Converting {0} \n objects", BucketObjects.Count);
 
-      var convertedObjects = Converter.Serialise(BucketObjects).Select(obj =>
-      {
-        if (ObjectCache.ContainsKey(obj.Hash))
-          return new SpecklePlaceholder() { Hash = obj.Hash, _id = ObjectCache[obj.Hash]._id };
-        return obj;
-      }).ToList();
-
-      this.Message = String.Format("Creating payloads");
-
-      long totalBucketSize = 0;
-      long currentBucketSize = 0;
-      List<List<SpeckleObject>> objectUpdatePayloads = new List<List<SpeckleObject>>();
-      List<SpeckleObject> currentBucketObjects = new List<SpeckleObject>();
-      List<SpeckleObject> allObjects = new List<SpeckleObject>();
-
-      foreach (SpeckleObject convertedObject in convertedObjects)
-      {
-        long size = Converter.getBytes(convertedObject).Length;
-        currentBucketSize += size;
-        totalBucketSize += size;
-        currentBucketObjects.Add(convertedObject);
-
-        if (currentBucketSize > 5e5) // restrict max to ~500kb; should it be user config? anyway these functions should go into core. at one point. 
+        if (MetadataSender.Enabled)
         {
-          Console.WriteLine("Reached payload limit. Making a new one, current  #: " + objectUpdatePayloads.Count);
-          objectUpdatePayloads.Add(currentBucketObjects);
-          currentBucketObjects = new List<SpeckleObject>();
-          currentBucketSize = 0;
+          //  start the timer again, as we need to make sure we're updating
+          DataSender.Start();
+          return;
         }
+
+        this.Message = String.Format("Converting {0} \n objects", BucketObjects.Count);
+
+        var convertedObjects = Converter.Serialise(BucketObjects).Select(obj =>
+        {
+          if (ObjectCache.ContainsKey(obj.Hash))
+            return new SpecklePlaceholder() { Hash = obj.Hash, _id = ObjectCache[obj.Hash]._id };
+          return obj;
+        }).ToList();
+
+        this.Message = String.Format("Creating payloads");
+
+        long totalBucketSize = 0;
+        long currentBucketSize = 0;
+        List<List<SpeckleObject>> objectUpdatePayloads = new List<List<SpeckleObject>>();
+        List<SpeckleObject> currentBucketObjects = new List<SpeckleObject>();
+        List<SpeckleObject> allObjects = new List<SpeckleObject>();
+
+        foreach (SpeckleObject convertedObject in convertedObjects)
+        {
+          long size = Converter.getBytes(convertedObject).Length;
+          currentBucketSize += size;
+          totalBucketSize += size;
+          currentBucketObjects.Add(convertedObject);
+
+          if (currentBucketSize > 5e5) // restrict max to ~500kb; should it be user config? anyway these functions should go into core. at one point. 
+          {
+            Console.WriteLine("Reached payload limit. Making a new one, current  #: " + objectUpdatePayloads.Count);
+            objectUpdatePayloads.Add(currentBucketObjects);
+            currentBucketObjects = new List<SpeckleObject>();
+            currentBucketSize = 0;
+          }
+        }
+
+        // add  the last bucket 
+        if (currentBucketObjects.Count > 0)
+          objectUpdatePayloads.Add(currentBucketObjects);
+
+        Console.WriteLine("Finished, payload object update count is: " + objectUpdatePayloads.Count + " total bucket size is (kb) " + totalBucketSize / 1000);
+
+        if (objectUpdatePayloads.Count > 100)
+        {
+          Warning("This is a humongous update, in the range of ~50mb. For now, create more streams instead of just one massive one! Updates will be faster and snappier, and you can combine them back together at the other end easier.");
+        }
+
+        int k = 0;
+        List<ResponseObject> responses = new List<ResponseObject>();
+        foreach (var payload in objectUpdatePayloads)
+        {
+          this.Message = String.Format("Sending payload\n{0} / {1}", k++, objectUpdatePayloads.Count);
+
+          responses.Add(mySender.ObjectCreateAsync(payload).GetAwaiter().GetResult());
+        }
+
+        this.Message = "Updating stream...";
+
+        // create placeholders for stream update payload
+        List<SpeckleObject> placeholders = new List<SpeckleObject>();
+        foreach (var myResponse in responses)
+          foreach (var obj in myResponse.Resources) placeholders.Add(new SpecklePlaceholder() { _id = obj._id });
+
+        SpeckleStream updateStream = new SpeckleStream()
+        {
+          Layers = BucketLayers,
+          Name = BucketName,
+          Objects = placeholders
+        };
+
+        //// set some base properties (will be overwritten)
+        //var baseProps = new Dictionary<string, object>();
+        //baseProps["units"] = Rhino.RhinoDoc.ActiveDoc.ModelUnitSystem.ToString();
+        //baseProps["tolerance"] = Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance;
+        //baseProps["angleTolerance"] = Rhino.RhinoDoc.ActiveDoc.ModelAngleToleranceRadians;
+        //updateStream.BaseProperties = baseProps;
+
+        var response = mySender.StreamUpdateAsync(mySender.StreamId, updateStream).Result;
+
+        mySender.BroadcastMessage(new { eventType = "update-global" });
+
+        //put the objects in the cache
+        int l = 0;
+        foreach (var obj in placeholders)
+        {
+          ObjectCache[convertedObjects[l].Hash] = placeholders[l];
+          l++;
+        }
+
+        Log += response.Message;
+        Message = "Data sent\n@" + DateTime.Now.ToString("HH:mm:ss");
+        Transmitting = false;
       }
-
-      // add  the last bucket 
-      if (currentBucketObjects.Count > 0)
-        objectUpdatePayloads.Add(currentBucketObjects);
-
-      Console.WriteLine("Finished, payload object update count is: " + objectUpdatePayloads.Count + " total bucket size is (kb) " + totalBucketSize / 1000);
-
-      if (objectUpdatePayloads.Count > 100)
+      catch(Exception ex)
       {
-        Warning("This is a humongous update, in the range of ~50mb. For now, create more streams instead of just one massive one! Updates will be faster and snappier, and you can combine them back together at the other end easier.");
+        Error(ex.Message);
+        Transmitting = false;
       }
-
-      int k = 0;
-      List<ResponseObject> responses = new List<ResponseObject>();
-      foreach (var payload in objectUpdatePayloads)
-      {
-        this.Message = String.Format("Sending payload\n{0} / {1}", k++, objectUpdatePayloads.Count);
-
-        responses.Add(mySender.ObjectCreateAsync(payload).GetAwaiter().GetResult());
-      }
-
-      this.Message = "Updating stream...";
-
-      // create placeholders for stream update payload
-      List<SpeckleObject> placeholders = new List<SpeckleObject>();
-      foreach (var myResponse in responses)
-        foreach (var obj in myResponse.Resources) placeholders.Add(new SpecklePlaceholder() { _id = obj._id });
-
-      SpeckleStream updateStream = new SpeckleStream()
-      {
-        Layers = BucketLayers,
-        Name = BucketName,
-        Objects = placeholders
-      };
-
-      //// set some base properties (will be overwritten)
-      //var baseProps = new Dictionary<string, object>();
-      //baseProps["units"] = Rhino.RhinoDoc.ActiveDoc.ModelUnitSystem.ToString();
-      //baseProps["tolerance"] = Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance;
-      //baseProps["angleTolerance"] = Rhino.RhinoDoc.ActiveDoc.ModelAngleToleranceRadians;
-      //updateStream.BaseProperties = baseProps;
-
-      var response = mySender.StreamUpdateAsync(mySender.StreamId, updateStream).Result;
-
-      mySender.BroadcastMessage(new { eventType = "update-global" });
-
-      //put the objects in the cache
-      int l = 0;
-      foreach (var obj in placeholders)
-      {
-        ObjectCache[convertedObjects[l].Hash] = placeholders[l];
-        l++;
-      }
-
-      Log += response.Message;
-      Message = "Data sent\n@" + DateTime.Now.ToString("HH:mm:ss");
-      Transmitting = false;
-
     }
 
     public void UpdateMetadata()
@@ -476,10 +488,9 @@ namespace SpeckleDynamo
     #region overrides
 
 
-    private void Inputs_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    public void RenameLayers(List<string> layers)
     {
-      if (Inputs.Count == InPorts.Count && string.Join(".", Inputs.Select(x => x.Name)) != string.Join(".", InPorts.Select(x => x.Name)))
-      {
+
         _registeringPorts = true;
         //collect connections
         List<List<PortModel>> startPorts = new List<List<PortModel>>();
@@ -492,9 +503,9 @@ namespace SpeckleDynamo
         InPorts.RemoveAll((p) => { return true; });
 
         //add new ports and old connections
-        for (var i = 0; i < Inputs.Count; i++)
+        for (var i = 0; i < layers.Count; i++)
         {
-          InPorts.Add(new PortModel(PortType.Input, this, new PortData(Inputs[i].Name, "")));
+          InPorts.Add(new PortModel(PortType.Input, this, new PortData(layers[i], "")));
           foreach (var s in startPorts[i])
             InPorts.Last().Connectors.Add(new ConnectorModel(s,InPorts.Last(),Guid.NewGuid()));
         }       
@@ -502,7 +513,7 @@ namespace SpeckleDynamo
         _registeringPorts = false;
         Transmitting = true;
         UpdateMetadata();
-      }
+      
 
     }
 
@@ -510,7 +521,6 @@ namespace SpeckleDynamo
     {
       var name = GetSequence().ElementAt(InPorts.Count);
       InPorts.Add(new PortModel(PortType.Input, this, new PortData(name, "Layer "+ name)));
-      Inputs.Add(new InputName(InPorts.Last().Name));
 
       if (MetadataSender != null)
         UpdateMetadata();
@@ -521,7 +531,6 @@ namespace SpeckleDynamo
       if (InPorts.Count > 1)
       {
         base.RemoveInput();
-        Inputs.RemoveAt(Inputs.Count - 1);
       }
 
       if (MetadataSender != null)
