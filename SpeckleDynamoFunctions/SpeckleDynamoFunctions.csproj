@@ -115,9 +115,6 @@
     <PackageReference Include="DynamoVisualProgramming.Core">
       <Version>2.0.1.5055</Version>
     </PackageReference>
-    <PackageReference Include="DynamoVisualProgramming.DynamoServices" IncludeAssets="build;compile">
-      <Version>2.0.1.5055</Version>
-    </PackageReference>
     <PackageReference Include="DynamoVisualProgramming.ZeroTouchLibrary">
       <Version>2.0.1.5055</Version>
     </PackageReference>
