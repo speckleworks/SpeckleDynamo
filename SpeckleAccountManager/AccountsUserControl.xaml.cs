@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
@@ -9,7 +9,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Newtonsoft.Json;
-using System.Collections.ObjectModel;
 using SpeckleCore;
 
 namespace SpecklePopup
@@ -20,17 +19,14 @@ namespace SpecklePopup
   public partial class AccountsUserControl : UserControl
   {
     private string _defaultServer = "https://hestia.speckle.works/api/v1";
-    List<string> existingServers = new List<string>();
-    List<string> existingServers_fullDetails = new List<string>();
-    internal ObservableCollection<SpeckleAccount> accounts = new ObservableCollection<SpeckleAccount>();
-
-    bool validationCheckPass = false;
-
-    Uri ServerAddress;
-    string email;
-    string password;
-
-    string serverName;
+    private List<string> existingServers = new List<string>();
+    private List<string> existingServers_fullDetails = new List<string>();
+    internal ObservableCollection<Account> accounts = new ObservableCollection<Account>();
+    private bool validationCheckPass = false;
+    private Uri ServerAddress;
+    private string email;
+    private string password;
+    private string serverName;
     public string restApi;
     public string apitoken;
 
@@ -43,40 +39,24 @@ namespace SpecklePopup
 
       //only show in popupmode
       ButonUseSelected.Visibility = Visibility.Collapsed;
-      AccountListBox.ItemsSource = accounts;
+
+      LocalContext.Init();
       LoadAccounts();
     }
+
     private void LoadAccounts()
     {
-      accounts.Clear();
-      string strPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData) + @"\SpeckleSettings";
-      if (Directory.Exists(strPath) && Directory.EnumerateFiles(strPath, "*.txt").Count() > 0)
-        foreach (string file in Directory.EnumerateFiles(strPath, "*.txt"))
-        {
-          string content = File.ReadAllText(file);
-          string[] pieces = content.TrimEnd('\r', '\n').Split(',');
+      accounts = new ObservableCollection<Account>(LocalContext.GetAllAccounts());
+      AccountListBox.ItemsSource = accounts;
 
-          try
-          {
-            if (pieces.Length == 5)
-              accounts.Add(new SpeckleAccount() { email = pieces[0], apiToken = pieces[1], serverName = pieces[2], restApi = pieces[3], rootUrl = pieces[4], isDefault = false });
-            else if (pieces.Length == 6)
-              accounts.Add(new SpeckleAccount() { email = pieces[0], apiToken = pieces[1], serverName = pieces[2], restApi = pieces[3], rootUrl = pieces[4], isDefault = bool.Parse(pieces[5]) });
-          }
-          catch (Exception e)
-          {
-            MessageBox.Show(e.Message, "Something went wrong! (╯°□°）╯︵ ┻━┻");
-            return;
-          }
-        }
-      if (accounts.Any(x => x.isDefault))
+      if (accounts.Any(x => x.IsDefault))
       {
-        int index = accounts.Select((v, i) => new { acc = v, index = i }).First(x => x.acc.isDefault).index;
+        int index = accounts.Select((v, i) => new { acc = v, index = i }).First(x => x.acc.IsDefault).index;
         AccountListBox.SelectedIndex = index;
-      }
-
-
+      }  
     }
+
+
     private string ValidateRegister()
     {
       Debug.WriteLine("validating...");
@@ -87,27 +67,33 @@ namespace SpecklePopup
           (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
 
       if (!IsUrl)
+      {
         validationErrors += "Invalid server url. \n";
+      }
 
       ServerAddress = uriResult;
 
       MailAddress addr = null;
       try
       {
-        addr = new System.Net.Mail.MailAddress(this.RegisterEmail.Text);
+        addr = new System.Net.Mail.MailAddress(RegisterEmail.Text);
       }
       catch
       {
         validationErrors += "Invalid email address. \n";
       }
 
-      string password = this.RegisterPassword.Password;
+      string password = RegisterPassword.Password;
 
       if (password.Length <= 8)
+      {
         validationErrors += "Password too short (<8). \n";
+      }
 
-      if (password != this.RegisterPasswordConfirm.Password)
+      if (password != RegisterPasswordConfirm.Password)
+      {
         validationErrors += "Passwords do not match. \n";
+      }
 
       return validationErrors;
     }
@@ -122,14 +108,16 @@ namespace SpecklePopup
           (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
 
       if (!IsUrl)
+      {
         validationErrors += "Invalid server url. \n";
+      }
 
       ServerAddress = uriResult;
 
       MailAddress addr = null;
       try
       {
-        addr = new System.Net.Mail.MailAddress(this.LoginEmail.Text);
+        addr = new System.Net.Mail.MailAddress(LoginEmail.Text);
       }
       catch
       {
@@ -163,8 +151,8 @@ namespace SpecklePopup
 
     private void AccountListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-      this.restApi = this.accounts[this.AccountListBox.SelectedIndex].restApi;
-      this.apitoken = this.accounts[this.AccountListBox.SelectedIndex].apiToken;
+      restApi = accounts[AccountListBox.SelectedIndex].RestApi;
+      apitoken = accounts[AccountListBox.SelectedIndex].Token;
       //this.Close();
     }
 
@@ -183,14 +171,14 @@ namespace SpecklePopup
         return;
       }
 
-      var names = this.RegisterName.Text.Split(' ');
+      var names = RegisterName.Text.Split(' ');
       var myUser = new User()
       {
-        Email = this.RegisterEmail.Text,
-        Password = this.RegisterPassword.Password,
+        Email = RegisterEmail.Text,
+        Password = RegisterPassword.Password,
         Name = names?[0],
         Surname = names.Length >= 2 ? names?[1] : null,
-        Company = this.RegisterCompany.Text,
+        Company = RegisterCompany.Text,
       };
 
       string rawPingReply = "";
@@ -216,17 +204,18 @@ namespace SpecklePopup
 
         var serverName = parsedReply.serverName;
         var isDefault = accounts.Any() ? false : true;
-        saveAccountToDisk(this.RegisterEmail.Text, response.Resource.Apitoken, (string)serverName, this.RegisterServerUrl.Text, this.RegisterServerUrl.Text, isDefault);
+        var newaccount = new Account { Email = myUser.Email, RestApi = ServerAddress.ToString(), ServerName = (string)serverName, Token = response.Resource.Apitoken, IsDefault = isDefault };
+        LocalContext.AddAccount(newaccount);
 
         MessageBox.Show("Account creation ok: You're good to go.");
-        this.restApi = this.RegisterServerUrl.Text;
-        this.apitoken = response.Resource.Apitoken;
+        restApi = RegisterServerUrl.Text;
+        apitoken = response.Resource.Apitoken;
         RegisterButton.IsEnabled = true;
         RegisterButton.Content = "Register";
 
         AccoutsTabControl.SelectedIndex = 0;
         LoadAccounts();
-        int index = accounts.Select((v, i) => new { acc = v, index = i }).First(x => x.acc.restApi == RegisterServerUrl.Text && x.acc.email == RegisterEmail.Text).index;
+        int index = accounts.Select((v, i) => new { acc = v, index = i }).First(x => x.acc.RestApi == RegisterServerUrl.Text && x.acc.Email == RegisterEmail.Text).index;
         AccountListBox.SelectedIndex = index;
         RegisterServerUrl.Text = RegisterEmail.Text = RegisterName.Text = RegisterCompany.Text = RegisterPassword.Password = RegisterPasswordConfirm.Password = "";
 
@@ -248,8 +237,8 @@ namespace SpecklePopup
 
       var myUser = new User()
       {
-        Email = this.LoginEmail.Text,
-        Password = this.LoginPassword.Password,
+        Email = LoginEmail.Text,
+        Password = LoginPassword.Password,
       };
 
       var spkClient = new SpeckleApiClient() { BaseUrl = ServerAddress.ToString() };
@@ -266,7 +255,7 @@ namespace SpecklePopup
         catch { MessageBox.Show("Failed to contact " + ServerAddress.ToString()); RegisterButton.IsEnabled = true; RegisterButton.Content = "Register"; return; }
       }
 
-      var existing = accounts.FirstOrDefault(account => account.email == myUser.Email && account.restApi == ServerAddress.ToString());
+      var existing = accounts.FirstOrDefault(account => account.Email == myUser.Email && account.RestApi == ServerAddress.ToString());
       if (existing != null)
       {
         MessageBox.Show("You already have an account on " + ServerAddress.ToString() + " with " + myUser.Email + ".");
@@ -284,15 +273,16 @@ namespace SpecklePopup
 
         var serverName = parsedReply.serverName;
         var isDefault = accounts.Any() ? false : true;
-        saveAccountToDisk(myUser.Email, response.Resource.Apitoken, (string)serverName, this.ServerAddress.ToString(), this.ServerAddress.ToString(), isDefault);
+        var newaccount = new Account { Email = myUser.Email, RestApi = ServerAddress.ToString(), ServerName = (string)serverName, Token = response.Resource.Apitoken, IsDefault = isDefault };
+        LocalContext.AddAccount(newaccount);
 
         MessageBox.Show("Account login ok: You're good to go.");
-        this.restApi = this.RegisterServerUrl.Text;
-        this.apitoken = response.Resource.Apitoken;
+        restApi = RegisterServerUrl.Text;
+        apitoken = response.Resource.Apitoken;
 
         AccoutsTabControl.SelectedIndex = 0;
         LoadAccounts();
-        int index = accounts.Select((v, i) => new { acc = v, index = i }).First(x => x.acc.restApi == LoginServerUrl.Text && x.acc.email == LoginEmail.Text).index;
+        int index = accounts.Select((v, i) => new { acc = v, index = i }).First(x => x.acc.RestApi == LoginServerUrl.Text && x.acc.Email == LoginEmail.Text).index;
         AccountListBox.SelectedIndex = index;
         LoginServerUrl.Text = LoginEmail.Text = LoginPassword.Password = "";
       }
@@ -305,11 +295,8 @@ namespace SpecklePopup
 
     private void RadioButton_Click(object sender, RoutedEventArgs e)
     {
-      foreach (var account in accounts)
-      {
-        //overwrite existing settings with new IsDefaut value
-        saveAccountToDisk(account.email, account.apiToken, account.serverName, account.restApi, account.rootUrl, account.isDefault);
-      }
+      var rb = sender as RadioButton;
+      LocalContext.SetDefaultAccount(rb.DataContext as Account);
     }
   }
 

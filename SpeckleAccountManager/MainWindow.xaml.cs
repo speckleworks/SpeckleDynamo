@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Input;
 using System.Linq;
+using SpeckleCore;
 
 namespace SpecklePopup
 {
@@ -26,9 +27,9 @@ namespace SpecklePopup
         AccountsControl.ButonUseSelected.Click += ButtonUseSelected_Click;
 
         //skip popup if there's a default account!
-        if (AccountsControl.accounts.Any(x => x.isDefault))
+        if (AccountsControl.accounts.Any(x => x.IsDefault))
         {
-          UseSelected(AccountsControl.accounts.First(x => x.isDefault));
+          UseSelected(AccountsControl.accounts.First(x => x.IsDefault));
           HasDefaultAccount = true;
         }
       }
@@ -43,9 +44,6 @@ namespace SpecklePopup
       {
         this.DragMove();
       };
-
-
-
 
     }
 
@@ -69,12 +67,12 @@ namespace SpecklePopup
       UseSelected(AccountsControl.accounts[AccountsControl.AccountListBox.SelectedIndex]);
     }
 
-    private void UseSelected(SpeckleAccount account)
+    private void UseSelected(Account account)
     {
-      restApi = account.restApi;
-      apitoken = account.apiToken;
-      selectedEmail = account.email;
-      selectedServer = account.serverName;
+      restApi = account.RestApi;
+      apitoken = account.Token;
+      selectedEmail = account.Email;
+      selectedServer = account.ServerName;
       Close();
     }
 
