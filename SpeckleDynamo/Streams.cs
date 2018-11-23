@@ -98,7 +98,7 @@ namespace SpeckleDynamo
       //saved receiver
       if (Client != null)
       {
-        AuthToken = Utils.Accounts.GetAuthToken(Email, RestApi);
+        AuthToken = Client.AuthToken;
         GetStreams();
         return;
       }

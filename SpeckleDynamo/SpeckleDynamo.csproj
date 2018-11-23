@@ -100,7 +100,6 @@
     <Compile Include="UserControls\SenderUi.xaml.cs">
       <DependentUpon>SenderUi.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Utils\Accounts.cs" />
     <Compile Include="ValueConverters\BoolVisibConverter.cs" />
     <Compile Include="ValueConverters\InverseBooleanConverter.cs" />
     <Compile Include="ViewCustomizations\StreamsViewCustomization.cs" />

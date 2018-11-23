@@ -521,9 +521,9 @@ namespace SpeckleDynamo
       if (myReceiver != null)
       {
         // this.DispatchOnUIThread(() => OutPorts.RemoveAll((p) => { return true; }));
+        AuthToken = myReceiver.AuthToken;
         Message = "";
         Transmitting = false;
-        AuthToken = Utils.Accounts.GetAuthToken(Email, RestApi);
         OldLayers = OutPorts.Select(x => new Layer(x.Name, x.ToolTip, "", 0, 0, 0)).ToList();
         InitReceiverEventsAndGlobals();
         return;

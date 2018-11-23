@@ -272,14 +272,14 @@ namespace SpeckleDynamo
       //saved sender
       if (mySender != null)
       {
-        AuthToken = mySender.AuthToken = Utils.Accounts.GetAuthToken(Email, RestApi);
+        AuthToken = mySender.AuthToken;
         if (string.IsNullOrEmpty(AuthToken))
         {
           Warning(@"This sender was created under another account ¯\_(⊙︿⊙)_/¯. Either add it to your Speckle Accounts or create a new sender.");
           Message = "Account error";
           return;
         }
-
+        
         InitializeSender(false);
         Message = "";
         return;

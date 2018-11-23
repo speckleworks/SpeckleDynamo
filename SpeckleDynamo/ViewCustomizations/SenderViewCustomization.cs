@@ -9,9 +9,6 @@ using System.Windows;
 using SpeckleDynamo.UserControls;
 using SpecklePopup;
 using System.Windows.Controls;
-using System.Collections.ObjectModel;
-using SpeckleDynamo.Utils;
-
 namespace SpeckleDynamo
 {
   public class SenderViewCustomization : INodeViewCustomization<Sender>
