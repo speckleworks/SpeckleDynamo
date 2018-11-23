@@ -43,6 +43,7 @@ namespace SpeckleDynamo
 
       nodeView.inputGrid.Children.Add(ui);
       nodeView.grid.ContextMenu.Items.Add(new Separator());
+      //rename layers
       var mi = new MenuItem { Header = "Rename Layers (Inputs)..." };
       mi.Click += (s, e) =>
        {
@@ -56,7 +57,50 @@ namespace SpeckleDynamo
            _sender.RenameLayers(rl.Layers.Select(x=>x.Name).ToList());
          }
        };
+
+      //stream view
+      var viewStream = new MenuItem { Header = "View stream online" };
+      viewStream.Click += (s, e) =>
+      {
+        if (_sender.StreamId == null) return;
+        System.Diagnostics.Process.Start(_sender.RestApi.Replace("api/v1", "view") + @"/?streams=" + _sender.StreamId);
+      };
+      var viewStreamData = new MenuItem { Header = "(API) View stream data" };
+      viewStreamData.Click += (s, e) =>
+      {
+        if (_sender.StreamId == null) return;
+        System.Diagnostics.Process.Start(_sender.RestApi + @"/streams/" + _sender.StreamId);
+      };
+      var viewObjectsData = new MenuItem { Header = "(API) View objects data" };
+      viewObjectsData.Click += (s, e) =>
+      {
+        if (_sender.StreamId == null) return;
+        System.Diagnostics.Process.Start(_sender.RestApi + @"/streams/" + _sender.StreamId + @"/objects?omit=displayValue,base64");
+      };
+
+      var addToHistory = new MenuItem { Header = "Save current stream as a version" };
+      addToHistory.Click += (s, e) =>
+      {
+        if (_sender.StreamId == null) return;
+        var cloneResult = _sender.mySender.StreamCloneAsync(_sender.StreamId).Result;
+        _sender.mySender.Stream.Children.Add(cloneResult.Clone.StreamId);
+
+        _sender.mySender.BroadcastMessage(new { eventType = "update-children" });
+
+        System.Windows.MessageBox.Show("Stream version saved. CloneId: " + cloneResult.Clone.StreamId);
+      };
+
+
+
+
       nodeView.grid.ContextMenu.Items.Add(mi);
+      nodeView.grid.ContextMenu.Items.Add(viewStream);
+      nodeView.grid.ContextMenu.Items.Add(viewStreamData);
+      nodeView.grid.ContextMenu.Items.Add(viewObjectsData);
+      nodeView.grid.ContextMenu.Items.Add(addToHistory);
+
+
+
     }
     public void Dispose()
     {

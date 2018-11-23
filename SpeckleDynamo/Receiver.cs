@@ -505,6 +505,7 @@ namespace SpeckleDynamo
     private void ResetReceiver()
     {
       Layers = new List<Layer>();
+      OldLayers = new List<Layer>();
       ObjectCache = new Dictionary<string, SpeckleObject>();
       SpeckleObjects = new List<SpeckleObject>();
       ConvertedObjects = new List<object>();
