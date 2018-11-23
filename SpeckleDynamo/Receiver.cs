@@ -275,6 +275,8 @@ namespace SpeckleDynamo
       var getStream = myReceiver.StreamGetAsync(myReceiver.StreamId, null);
       getStream.Wait();
 
+      myReceiver.Stream = getStream.Result.Resource;
+
       Name = getStream.Result.Resource.Name;
       Layers = getStream.Result.Resource.Layers.ToList();
 
