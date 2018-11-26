@@ -7,6 +7,7 @@
       SpeckleDynamoConverter
       SpeckleDynamoExtension
       SpecklePopup
+      e_sqlite3
     </ExcludeAssemblies>
   </Costura>
 </Weavers>
