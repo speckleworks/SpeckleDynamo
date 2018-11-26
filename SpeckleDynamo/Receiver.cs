@@ -1,22 +1,20 @@
-﻿using Dynamo.Graph;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Windows;
+using System.Xml;
+using Dynamo.Graph;
 using Dynamo.Graph.Connectors;
 using Dynamo.Graph.Nodes;
+using Dynamo.Models;
 using Dynamo.Utilities;
 using Newtonsoft.Json;
 using ProtoCore.AST.AssociativeAST;
 using SpeckleCore;
 using SpeckleDynamo.Serialization;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.IO.Compression;
-using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Threading;
-using System.Windows;
-using System.Xml;
-using Dynamo.Models;
 
 namespace SpeckleDynamo
 {
@@ -78,11 +76,13 @@ namespace SpeckleDynamo
     private Receiver(IEnumerable<PortModel> inPorts, IEnumerable<PortModel> outPorts) : base(inPorts, outPorts)
     {
       var hack = new ConverterHack();
+      LocalContext.Init();
     }
 
     public Receiver()
     {
       var hack = new ConverterHack();
+      LocalContext.Init();
       Transmitting = false;
       RegisterAllPorts();
     }
@@ -119,10 +119,12 @@ namespace SpeckleDynamo
 
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
-      this.ClearErrorsAndWarnings();
+      ClearErrorsAndWarnings();
 
       if (_registeringPorts)
+      {
         return Enumerable.Empty<AssociativeNode>();
+      }
       //probably means that the stream ID has changed
       if (!hasNewData)
       {
@@ -134,14 +136,16 @@ namespace SpeckleDynamo
       else
       {
 
-          Transmitting = false;
-          Message = "Got data\n@" + DateTime.Now.ToString("HH:mm:ss");
+        Transmitting = false;
+        Message = "Got data\n@" + DateTime.Now.ToString("HH:mm:ss");
 
-       
-        
+
+
         hasNewData = false;
         if (Layers == null || ConvertedObjects.Count == 0)
+        {
           return Enumerable.Empty<AssociativeNode>();
+        }
 
         var associativeNodes = new List<AssociativeNode>();
         foreach (Layer layer in Layers)
@@ -171,7 +175,9 @@ namespace SpeckleDynamo
               var branchTopo = branch.Split('-')[0].Split(';');
               var branchIndexes = new List<int>();
               foreach (var t in branchTopo)
+              {
                 branchIndexes.Add(Convert.ToInt32(t));
+              }
 
               elCount = Convert.ToInt32(branch.Split('-')[1]);
 
@@ -186,13 +192,19 @@ namespace SpeckleDynamo
             {
               //if only one item simplify output structure
               if (tree[0] is List<object> && (tree[0] as List<object>).Count == 1)
+              {
                 output = (tree[0] as List<object>)[0];
+              }
               else
+              {
                 output = tree[0];
+              }
             }
 
             else
+            {
               output = tree;
+            }
 
             Functions.SpeckleTempData.AddLayerObjects(StreamId + layer.Guid, output);
 
@@ -227,15 +239,22 @@ namespace SpeckleDynamo
         while (tree.Count <= index || !(tree.ElementAt(index) is List<object>))
         {
           if (tree.Count > index)
+          {
             tree.Insert(index, new List<object>());
+          }
           else
+          {
             tree.Add(new List<object>());
+          }
         }
         //when reaching the end of the path just add the elements
         if (branchIndexes.Count == currentIndexPosition + 1)
         {
           for (int i = 0; i < elCount; i++)
+          {
             (tree[index] as List<object>).Add(subset[subsetCount + i]);
+          }
+
           subsetCount += elCount;
 
 
@@ -256,53 +275,75 @@ namespace SpeckleDynamo
       var getStream = myReceiver.StreamGetAsync(myReceiver.StreamId, null);
       getStream.Wait();
 
-      this.Name = getStream.Result.Resource.Name;
+      myReceiver.Stream = getStream.Result.Resource;
+
+      Name = getStream.Result.Resource.Name;
       Layers = getStream.Result.Resource.Layers.ToList();
 
       // TODO: check statement below with dimitrie
       // we can safely omit the displayValue, since this is rhino!
-      Message = "Getting objects";
+      Message = "Getting objects!";
 
-      var payload = getStream.Result.Resource.Objects.Select(obj => obj._id).ToArray(); //.Where(o => !ObjectCache.ContainsKey(o._id)).
+      // pass the object list through a cache check 
+      LocalContext.GetCachedObjects(myReceiver.Stream.Objects, myReceiver.BaseUrl);
 
-      myReceiver.ObjectGetBulkAsync(payload, "omit=displayValue").ContinueWith(tres =>
+      // filter out the objects that were not in the cache and still need to be retrieved
+      var payload = myReceiver.Stream.Objects.Where(o => o.Type == SpeckleObjectType.Placeholder).Select(obj => obj._id).ToArray();
+
+      // how many objects to request from the api at a time
+      int maxObjRequestCount = 20;
+
+      // list to hold them into
+      var newObjects = new List<SpeckleObject>();
+
+      // jump in `maxObjRequestCount` increments through the payload array
+      for (int i = 0; i < payload.Length; i += maxObjRequestCount)
       {
-        //add to cache
-        foreach (var x in tres.Result.Resources)
-          ObjectCache[x._id] = x;
+        // create a subset
+        var subPayload = payload.Skip(i).Take(maxObjRequestCount).ToArray();
 
-        // populate real objects
-        SpeckleObjects.Clear();
-        foreach (var obj in getStream.Result.Resource.Objects)
-          SpeckleObjects.Add(ObjectCache[obj._id]);
+        // get it sync as this is always execed out of the main thread
+        var res = myReceiver.ObjectGetBulkAsync(subPayload, "omit=displayValue").Result;
 
-        this.Message = "Converting objects";
-        ConvertedObjects = SpeckleCore.Converter.Deserialise(SpeckleObjects);
+        // put them in our bucket
+        newObjects.AddRange(res.Resources);
+        this.Message = JsonConvert.SerializeObject(String.Format("Got {0} out of {1} objects.", i, payload.Length));
+      }
 
-        if (ConvertedObjects.Count != SpeckleObjects.Count)
-        {
-          Console.WriteLine("Some objects failed to convert.");
-        }
+      foreach (var obj in newObjects)
+      {
+        var locationInStream = myReceiver.Stream.Objects.FindIndex(o => o._id == obj._id);
+        try { myReceiver.Stream.Objects[locationInStream] = obj; } catch { }
 
-        if(RunType == RunType.Manual)
-          this.Message = "Update available since " + DateTime.Now;
-        else
-          this.Message = "Updating...";
+        // add objects to cache
+        LocalContext.AddCachedObject(obj, myReceiver.BaseUrl);
+      }
 
-        //expire node on main thread
-        hasNewData = true;
-        UpdateOutputStructure();
-        ExpireNode();
-      });
+      ConvertedObjects = SpeckleCore.Converter.Deserialise(myReceiver.Stream.Objects);
+
+      if (RunType == RunType.Manual)
+      {
+        Message = "Update available since " + DateTime.Now;
+      }
+      else
+      {
+        Message = "Updating...";
+      }
+
+      //expire node on main thread
+      hasNewData = true;
+      UpdateOutputStructure();
+      ExpireNode();
+
     }
-   
+
 
 
     public virtual void UpdateMeta()
     {
       var result = myReceiver.StreamGetAsync(myReceiver.StreamId, "fields=name,layers").Result;
 
-      this.Name = result.Resource.Name;
+      Name = result.Resource.Name;
       Layers = result.Resource.Layers.ToList();
 
       UpdateOutputStructure();
@@ -318,24 +359,26 @@ namespace SpeckleDynamo
 
     private void UpdateOutputStructure()
     {
-        List<Layer> toRemove, toAdd, toUpdate;
-        toRemove = new List<Layer>();
-        toAdd = new List<Layer>();
-        toUpdate = new List<Layer>();
+      List<Layer> toRemove, toAdd, toUpdate;
+      toRemove = new List<Layer>();
+      toAdd = new List<Layer>();
+      toUpdate = new List<Layer>();
 
-        Layer.DiffLayerLists(OldLayers, Layers, ref toRemove, ref toAdd, ref toUpdate);
-        OldLayers = Layers;
+      Layer.DiffLayerLists(OldLayers, Layers, ref toRemove, ref toAdd, ref toUpdate);
+      OldLayers = Layers;
 
-        if (toRemove.Count == 0 && toAdd.Count == 0)
-          return;
+      if (toRemove.Count == 0 && toAdd.Count == 0)
+      {
+        return;
+      }
 
-      this.DispatchOnUIThread(() =>
+      DispatchOnUIThread(() =>
       {
 
         _registeringPorts = true;
-       
+
         //port was renamed, collect connectins and then try restore them
-        if(toRemove.Count == toAdd.Count && toRemove.Count == OutPorts.Count)
+        if (toRemove.Count == toAdd.Count && toRemove.Count == OutPorts.Count)
         {
           //collect connections
           List<List<PortModel>> endPorts = new List<List<PortModel>>();
@@ -343,7 +386,9 @@ namespace SpeckleDynamo
           {
             endPorts.Add(new List<PortModel>());
             foreach (var c in i.Connectors)
+            {
               endPorts.Last().Add(c.End);
+            }
           }
           OutPorts.RemoveAll((p) => { return true; });
           for (var i = 0; i < toAdd.Count; i++)
@@ -351,7 +396,9 @@ namespace SpeckleDynamo
             var layer = toAdd[i];
             OutPorts.Add(new PortModel(PortType.Output, this, new PortData(layer.Name, layer.Guid)));
             foreach (var e in endPorts[i])
-              OutPorts.Last().Connectors.Add(new ConnectorModel(OutPorts.Last(),e, Guid.NewGuid()));
+            {
+              OutPorts.Last().Connectors.Add(new ConnectorModel(OutPorts.Last(), e, Guid.NewGuid()));
+            }
           }
         }
         else
@@ -360,28 +407,30 @@ namespace SpeckleDynamo
           {
             var port = OutPorts.FirstOrDefault(item => { return item.Name == layer.Name; });
             if (port != null)
+            {
               OutPorts.Remove(port);
+            }
           }
           foreach (var layer in toAdd)
           {
             OutPorts.Add(new PortModel(PortType.Output, this, new PortData(layer.Name, layer.Guid)));
           }
         }
-       
+
         //can't rename ports, so no need for this
         //foreach (var layer in toUpdate)
         //{
-         //...
+        //...
         //}
 
         RegisterAllPorts();
-        _registeringPorts =false;
+        _registeringPorts = false;
       });
     }
 
     public void ExpireNode()
     {
-        OnNodeModified(forceExecute: true);
+      OnNodeModified(forceExecute: true);
     }
 
     internal void InitReceiverEventsAndGlobals()
@@ -392,21 +441,30 @@ namespace SpeckleDynamo
 
       ConvertedObjects = new List<object>();
 
-      if(myReceiver.IsConnected && !Paused)
+      if (myReceiver.IsConnected && !Paused)
+      {
         UpdateGlobal();
+      }
       else
+      {
         myReceiver.OnReady += (sender, e) =>
         {
           if (!Paused)
+          {
             UpdateGlobal();
+          }
         };
+      }
 
       myReceiver.OnWsMessage += OnWsMessage;
 
       myReceiver.OnError += (sender, e) =>
       {
         if (e.EventName == "websocket-disconnected")
+        {
           return;
+        }
+
         Warning(e.EventName + ": " + e.EventData);
       };
 
@@ -420,14 +478,19 @@ namespace SpeckleDynamo
     internal void ChangeStreams(string StreamId)
     {
       if (StreamId == OldStreamId)
+      {
         return;
+      }
+
       Transmitting = true;
       OldStreamId = StreamId;
 
       Console.WriteLine("Changing streams...");
 
       if (myReceiver != null)
+      {
         myReceiver.Dispose(true);
+      }
 
       if (StreamId == "")
       {
@@ -444,10 +507,11 @@ namespace SpeckleDynamo
     private void ResetReceiver()
     {
       Layers = new List<Layer>();
+      OldLayers = new List<Layer>();
       ObjectCache = new Dictionary<string, SpeckleObject>();
       SpeckleObjects = new List<SpeckleObject>();
       ConvertedObjects = new List<object>();
-      this.DispatchOnUIThread(() => OutPorts.RemoveAll((p) => { return true; }));
+      DispatchOnUIThread(() => OutPorts.RemoveAll((p) => { return true; }));
       Message = "";
       Transmitting = false;
       Name = "Speckle Receiver";
@@ -458,23 +522,26 @@ namespace SpeckleDynamo
       //saved receiver
       if (myReceiver != null)
       {
-       // this.DispatchOnUIThread(() => OutPorts.RemoveAll((p) => { return true; }));
+        // this.DispatchOnUIThread(() => OutPorts.RemoveAll((p) => { return true; }));
+        AuthToken = myReceiver.AuthToken;
         Message = "";
         Transmitting = false;
-        AuthToken = Utils.Accounts.GetAuthToken(Email, RestApi);
         OldLayers = OutPorts.Select(x => new Layer(x.Name, x.ToolTip, "", 0, 0, 0)).ToList();
         InitReceiverEventsAndGlobals();
         return;
       }
       Transmitting = true;
-      var myForm = new SpecklePopup.MainWindow();
+      var myForm = new SpecklePopup.MainWindow(true, true);
       //TODO: fix this it's crashing revit
       //myForm.Owner = Application.Current.MainWindow;
-      this.DispatchOnUIThread(() =>
+      DispatchOnUIThread(() =>
       {
         //if default account exists form is closed automatically
         if (!myForm.HasDefaultAccount)
+        {
           myForm.ShowDialog();
+        }
+
         if (myForm.restApi != null && myForm.apitoken != null)
         {
           Email = myForm.selectedEmail;
@@ -496,7 +563,7 @@ namespace SpeckleDynamo
 
     internal void PausePlayButtonClick(object sender, RoutedEventArgs e)
     {
-      
+
       Paused = !Paused;
       //if there's new data, get it on resume
       if (Expired && !Paused)
@@ -511,7 +578,10 @@ namespace SpeckleDynamo
     {
       //node disconnected before event was received
       if (string.IsNullOrEmpty(StreamId))
+      {
         return;
+      }
+
       if (Paused)
       {
         Message = "Update available since " + DateTime.Now;
@@ -548,7 +618,10 @@ namespace SpeckleDynamo
     public override void Dispose()
     {
       if (myReceiver != null)
+      {
         myReceiver.Dispose();
+      }
+
       base.Dispose();
 
       VMDataBridge.DataBridge.Instance.UnregisterCallback(GUID.ToString());
@@ -562,7 +635,9 @@ namespace SpeckleDynamo
     {
       base.SerializeCore(element, context); // Base implementation must be called.
       if (myReceiver == null)
+      {
         return;
+      }
 
       //https://stackoverflow.com/questions/13674395/no-map-for-object-error-when-deserializing-object
       using (var input = new MemoryStream())
@@ -600,11 +675,16 @@ namespace SpeckleDynamo
       foreach (XmlNode subNode in element.ChildNodes)
       {
         if (!subNode.Name.Equals("Speckle"))
+        {
           continue;
-        if (subNode.Attributes == null || (subNode.Attributes.Count <= 0))
-          continue;
+        }
 
-       // _coldStart = true;
+        if (subNode.Attributes == null || (subNode.Attributes.Count <= 0))
+        {
+          continue;
+        }
+
+        // _coldStart = true;
         foreach (XmlAttribute attr in subNode.Attributes)
         {
           switch (attr.Name)

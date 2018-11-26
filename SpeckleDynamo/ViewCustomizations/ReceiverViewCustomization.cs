@@ -3,6 +3,7 @@ using Dynamo.Models;
 using Dynamo.Wpf;
 using SpeckleDynamo.UserControls;
 using System;
+using System.Windows.Controls;
 
 namespace SpeckleDynamo.ViewCustomizations
 {
@@ -33,6 +34,32 @@ namespace SpeckleDynamo.ViewCustomizations
       nodeView.ViewModel.DynamoViewModel.HomeSpace.RunSettings.PropertyChanged += RunSettings_PropertyChanged; ;
 
       nodeView.inputGrid.Children.Add(ui);
+
+
+      nodeView.grid.ContextMenu.Items.Add(new Separator());
+      //stream view
+      var viewStream = new MenuItem { Header = "View stream online" };
+      viewStream.Click += (s, e) =>
+      {
+        if (_receiver.StreamId == null) return;
+        System.Diagnostics.Process.Start(_receiver.RestApi.Replace("api/v1", "view") + @"/?streams=" + _receiver.StreamId);
+      };
+      var viewStreamData = new MenuItem { Header = "(API) View stream data" };
+      viewStreamData.Click += (s, e) =>
+      {
+        if (_receiver.StreamId == null) return;
+        System.Diagnostics.Process.Start(_receiver.RestApi + @"/streams/" + _receiver.StreamId);
+      };
+      var viewObjectsData = new MenuItem { Header = "(API) View objects data" };
+      viewObjectsData.Click += (s, e) =>
+      {
+        if (_receiver.StreamId == null) return;
+        System.Diagnostics.Process.Start(_receiver.RestApi + @"/streams/" + _receiver.StreamId + @"/objects?omit=displayValue,base64");
+      };
+
+      nodeView.grid.ContextMenu.Items.Add(viewStream);
+      nodeView.grid.ContextMenu.Items.Add(viewStreamData);
+      nodeView.grid.ContextMenu.Items.Add(viewObjectsData);
     }
 
     private void RunSettings_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)

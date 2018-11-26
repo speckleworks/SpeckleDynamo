@@ -1,16 +1,6 @@
-﻿using Dynamo.Graph;
-using Dynamo.Graph.Connectors;
-using Dynamo.Graph.Nodes;
-using Dynamo.Utilities;
-using Newtonsoft.Json;
-using ProtoCore.AST.AssociativeAST;
-using SpeckleCore;
-using SpeckleDynamo.Serialization;
-using SpeckleDynamo.Utils;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
@@ -20,6 +10,14 @@ using System.Text;
 using System.Timers;
 using System.Windows;
 using System.Xml;
+using Dynamo.Graph;
+using Dynamo.Graph.Connectors;
+using Dynamo.Graph.Nodes;
+using Dynamo.Utilities;
+using Newtonsoft.Json;
+using ProtoCore.AST.AssociativeAST;
+using SpeckleCore;
+using SpeckleDynamo.Serialization;
 
 namespace SpeckleDynamo
 {
@@ -63,18 +61,21 @@ namespace SpeckleDynamo
     [JsonConverter(typeof(SpeckleClientConverter))]
     public SpeckleApiClient mySender;
     #endregion
-   
+
 
     [JsonConstructor]
     private Sender(IEnumerable<PortModel> inPorts, IEnumerable<PortModel> outPorts) : base(inPorts, outPorts)
     {
       var hack = new ConverterHack();
+      LocalContext.Init();
       ArgumentLacing = LacingStrategy.Disabled;
     }
 
     public Sender()
     {
       var hack = new ConverterHack();
+      LocalContext.Init();
+
       OutPorts.Add(new PortModel(PortType.Output, this, new PortData("Log", "Log Data")));
       OutPorts.Add(new PortModel(PortType.Output, this, new PortData("ID", "Stream ID")));
       InPorts.Add(new PortModel(PortType.Input, this, new PortData("A", "")));
@@ -109,20 +110,26 @@ namespace SpeckleDynamo
 
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
-      this.ClearErrorsAndWarnings();
+      ClearErrorsAndWarnings();
 
       if (_registeringPorts)
+      {
         return Enumerable.Empty<AssociativeNode>();
+      }
 
       if (mySender == null || Log == null)
+      {
         return Enumerable.Empty<AssociativeNode>();
+      }
 
       var associativeNodes = new List<AssociativeNode> {
                      AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildStringNode(Log)),
                      AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(1), AstFactory.BuildStringNode(mySender.StreamId)) };
 
       if (InPorts.Count == 0)
+      {
         return associativeNodes;
+      }
 
       //using BridgeData to get value of input from within the node itself
       Transmitting = true;
@@ -136,8 +143,8 @@ namespace SpeckleDynamo
 
     public void UpdateData()
     {
-      BucketName = this.Name;
-      BucketLayers = this.GetLayers();
+      BucketName = Name;
+      BucketLayers = GetLayers();
 
       BucketObjects = new List<object>();
       RecursivelyFlattenData(DataBridgeData, BucketObjects);
@@ -184,9 +191,13 @@ namespace SpeckleDynamo
 
       //recursion takes an ArrayList
       if (data is ArrayList)
+      {
         RecursivelyCreateTopology(data as ArrayList);
+      }
       else
+      {
         RecursivelyCreateTopology(new ArrayList { data });
+      }
     }
 
     private void RecursivelyCreateTopology(ArrayList list)
@@ -203,18 +214,26 @@ namespace SpeckleDynamo
 
             //after adding all items of the branch go back one level
             if (branchIndexes.Any())
+            {
               branchIndexes.RemoveAt(branchIndexes.Count - 1);
+            }
           }
           else
           {
             if (!branchIndexes.Any())
+            {
               branchIndexes.Add(0);
+            }
+
             var thisBranchTopo = string.Join(";", branchIndexes.Select(x => x.ToString()));
             if (branches.ContainsKey(thisBranchTopo))
+            {
               branches[thisBranchTopo] = branches[thisBranchTopo] + 1;
+            }
             else
+            {
               branches[thisBranchTopo] = 1;
-
+            }
           }
         }
       }
@@ -229,7 +248,9 @@ namespace SpeckleDynamo
       for (int i = 0; i < list.Count; i++)
       {
         if (list[i] is ArrayList)
+        {
           RecursivelyFlattenData(list[i] as ArrayList, flattenedList);
+        }
         else
         {
           flattenedList.Add(list[i]);
@@ -251,27 +272,30 @@ namespace SpeckleDynamo
       //saved sender
       if (mySender != null)
       {
-        AuthToken = mySender.AuthToken = Utils.Accounts.GetAuthToken(Email, RestApi);
+        AuthToken = mySender.AuthToken;
         if (string.IsNullOrEmpty(AuthToken))
         {
           Warning(@"This sender was created under another account ¯\_(⊙︿⊙)_/¯. Either add it to your Speckle Accounts or create a new sender.");
           Message = "Account error";
           return;
         }
-          
+        
         InitializeSender(false);
         Message = "";
         return;
       }
 
       Message = "Initialising...";
-      var myForm = new SpecklePopup.MainWindow();
-     // myForm.Owner = Application.Current.MainWindow;
-      this.DispatchOnUIThread(() =>
+      var myForm = new SpecklePopup.MainWindow(true,true);
+      // myForm.Owner = Application.Current.MainWindow;
+      DispatchOnUIThread(() =>
       {
         //if default account exists form is closed automatically
         if (!myForm.HasDefaultAccount)
+        {
           myForm.ShowDialog();
+        }
+
         if (myForm.restApi != null && myForm.apitoken != null)
         {
           mySender = new SpeckleApiClient(myForm.restApi);
@@ -296,11 +320,12 @@ namespace SpeckleDynamo
     private void InitializeSender(bool init)
     {
       if (init)
+      {
         mySender.IntializeSender(AuthToken, DocumentName, "Dynamo", DocumentGuid).ContinueWith(task =>
       {
         // ExpireNode();
       });
-
+      }
 
       mySender.OnReady += (sender, e) =>
         {
@@ -315,14 +340,17 @@ namespace SpeckleDynamo
 
       mySender.OnLogData += (sender, e) =>
       {
-        this.Log += DateTime.Now.ToString("dd:HH:mm:ss ") + e.EventData + "\n";
+        Log += DateTime.Now.ToString("dd:HH:mm:ss ") + e.EventData + "\n";
       };
 
       mySender.OnError += (sender, e) =>
       {
-        this.Log += DateTime.Now.ToString("dd:HH:mm:ss ") + e.EventData + "\n";
+        Log += DateTime.Now.ToString("dd:HH:mm:ss ") + e.EventData + "\n";
         if (e.EventName == "websocket-disconnected")
+        {
           return;
+        }
+
         Warning(e.EventName + ": " + e.EventData);
       };
       //TODO: check this
@@ -345,8 +373,6 @@ namespace SpeckleDynamo
     {
       try
       {
-
-
         if (MetadataSender.Enabled)
         {
           //  start the timer again, as we need to make sure we're updating
@@ -354,65 +380,112 @@ namespace SpeckleDynamo
           return;
         }
 
-        this.Message = String.Format("Converting {0} \n objects", BucketObjects.Count);
 
-        var convertedObjects = Converter.Serialise(BucketObjects).Select(obj =>
+
+        Message = String.Format("Converting {0} \n objects", BucketObjects.Count);
+
+        var convertedObjects = Converter.Serialise(BucketObjects).ToList();
+
+        Message = String.Format("Creating payloads");
+
+        LocalContext.PruneExistingObjects(convertedObjects, mySender.BaseUrl);
+
+        List<SpeckleObject> persistedObjects = new List<SpeckleObject>();
+
+        if (convertedObjects.Count(obj => obj.Type == SpeckleObjectType.Placeholder) != convertedObjects.Count)
         {
-          if (ObjectCache.ContainsKey(obj.Hash))
-            return new SpecklePlaceholder() { Hash = obj.Hash, _id = ObjectCache[obj.Hash]._id };
-          return obj;
-        }).ToList();
-
-        this.Message = String.Format("Creating payloads");
-
-        long totalBucketSize = 0;
-        long currentBucketSize = 0;
-        List<List<SpeckleObject>> objectUpdatePayloads = new List<List<SpeckleObject>>();
-        List<SpeckleObject> currentBucketObjects = new List<SpeckleObject>();
-        List<SpeckleObject> allObjects = new List<SpeckleObject>();
-
-        foreach (SpeckleObject convertedObject in convertedObjects)
-        {
-          long size = Converter.getBytes(convertedObject).Length;
-          currentBucketSize += size;
-          totalBucketSize += size;
-          currentBucketObjects.Add(convertedObject);
-
-          if (currentBucketSize > 5e5) // restrict max to ~500kb; should it be user config? anyway these functions should go into core. at one point. 
+          // create the update payloads
+          int count = 0;
+          var objectUpdatePayloads = new List<List<SpeckleObject>>();
+          long totalBucketSize = 0;
+          long currentBucketSize = 0;
+          var currentBucketObjects = new List<SpeckleObject>();
+          var allObjects = new List<SpeckleObject>();
+          foreach (SpeckleObject convertedObject in convertedObjects)
           {
-            Console.WriteLine("Reached payload limit. Making a new one, current  #: " + objectUpdatePayloads.Count);
+
+            if (count++ % 100 == 0)
+            {
+              Message = "Converted " + count + " objects out of " + convertedObjects.Count() + ".";
+            }
+
+            // size checking & bulk object creation payloads creation
+            long size = Converter.getBytes(convertedObject).Length;
+            currentBucketSize += size;
+            totalBucketSize += size;
+            currentBucketObjects.Add(convertedObject);
+
+            // Object is too big?
+            if (size > 2e6)
+            {
+
+              Warning("This stream contains a super big object. These will fail. Sorry for the bad error message - we're working on improving this.");
+
+              currentBucketObjects.Remove(convertedObject);
+            }
+
+            if (currentBucketSize > 5e5) // restrict max to ~500kb; should it be user config? anyway these functions should go into core. at one point. 
+            {
+              Console.WriteLine("Reached payload limit. Making a new one, current  #: " + objectUpdatePayloads.Count);
+              objectUpdatePayloads.Add(currentBucketObjects);
+              currentBucketObjects = new List<SpeckleObject>();
+              currentBucketSize = 0;
+            }
+          }
+
+          // add in the last bucket
+          if (currentBucketObjects.Count > 0)
+          {
             objectUpdatePayloads.Add(currentBucketObjects);
-            currentBucketObjects = new List<SpeckleObject>();
-            currentBucketSize = 0;
+          }
+
+          Console.WriteLine("Finished, payload object update count is: " + objectUpdatePayloads.Count + " total bucket size is (kb) " + totalBucketSize / 1000);
+
+          // create bulk object creation tasks
+          int k = 0;
+          List<ResponseObject> responses = new List<ResponseObject>();
+          foreach (var payload in objectUpdatePayloads)
+          {
+            Message = String.Format("Sending payload {0} out of {1}", k++, objectUpdatePayloads.Count);
+
+            try
+            {
+              var objResponse = mySender.ObjectCreateAsync(payload).Result;
+              responses.Add(objResponse);
+              persistedObjects.AddRange(objResponse.Resources);
+
+              // push sent objects in the cache
+              int m = 0;
+              foreach (var oL in payload)
+              {
+                oL._id = objResponse.Resources[m++]._id;
+
+                if (oL.Type != SpeckleObjectType.Placeholder)
+                {
+                  LocalContext.AddSentObject(oL, mySender.BaseUrl);
+                }
+              }
+            }
+            catch (Exception err)
+            {
+              Error(err.Message);
+              return;
+            }
           }
         }
-
-        // add  the last bucket 
-        if (currentBucketObjects.Count > 0)
-          objectUpdatePayloads.Add(currentBucketObjects);
-
-        Console.WriteLine("Finished, payload object update count is: " + objectUpdatePayloads.Count + " total bucket size is (kb) " + totalBucketSize / 1000);
-
-        if (objectUpdatePayloads.Count > 100)
+        else
         {
-          Warning("This is a humongous update, in the range of ~50mb. For now, create more streams instead of just one massive one! Updates will be faster and snappier, and you can combine them back together at the other end easier.");
+          persistedObjects = convertedObjects;
         }
 
-        int k = 0;
-        List<ResponseObject> responses = new List<ResponseObject>();
-        foreach (var payload in objectUpdatePayloads)
-        {
-          this.Message = String.Format("Sending payload\n{0} / {1}", k++, objectUpdatePayloads.Count);
-
-          responses.Add(mySender.ObjectCreateAsync(payload).GetAwaiter().GetResult());
-        }
-
-        this.Message = "Updating stream...";
+        Message = "Updating stream...";
 
         // create placeholders for stream update payload
         List<SpeckleObject> placeholders = new List<SpeckleObject>();
-        foreach (var myResponse in responses)
-          foreach (var obj in myResponse.Resources) placeholders.Add(new SpecklePlaceholder() { _id = obj._id });
+
+        //foreach ( var myResponse in responses )
+        foreach (var obj in persistedObjects)
+          placeholders.Add(new SpecklePlaceholder() { _id = obj._id });
 
         SpeckleStream updateStream = new SpeckleStream()
         {
@@ -422,29 +495,21 @@ namespace SpeckleDynamo
         };
 
         //// set some base properties (will be overwritten)
-        //var baseProps = new Dictionary<string, object>();
-        //baseProps["units"] = Rhino.RhinoDoc.ActiveDoc.ModelUnitSystem.ToString();
-        //baseProps["tolerance"] = Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance;
-        //baseProps["angleTolerance"] = Rhino.RhinoDoc.ActiveDoc.ModelAngleToleranceRadians;
-        //updateStream.BaseProperties = baseProps;
+        var baseProps = new Dictionary<string, object>();
+        baseProps["units"] = "unit";
+        baseProps["tolerance"] = "0.001";
+        baseProps["angleTolerance"] = "0.001";
+        updateStream.BaseProperties = baseProps;
 
         var response = mySender.StreamUpdateAsync(mySender.StreamId, updateStream).Result;
 
         mySender.BroadcastMessage(new { eventType = "update-global" });
 
-        //put the objects in the cache
-        int l = 0;
-        foreach (var obj in placeholders)
-        {
-          ObjectCache[convertedObjects[l].Hash] = placeholders[l];
-          l++;
-        }
-
         Log += response.Message;
         Message = "Data sent\n@" + DateTime.Now.ToString("HH:mm:ss");
         Transmitting = false;
       }
-      catch(Exception ex)
+      catch (Exception ex)
       {
         Error(ex.Message);
         Transmitting = false;
@@ -453,9 +518,9 @@ namespace SpeckleDynamo
 
     public void UpdateMetadata()
     {
-      BucketName = this.Name;
-      BucketLayers = this.GetLayers();
-      MetadataSender.Start(); 
+      BucketName = Name;
+      BucketLayers = GetLayers();
+      MetadataSender.Start();
     }
 
     private void MetadataSender_Elapsed(object sender, ElapsedEventArgs e)
@@ -491,39 +556,45 @@ namespace SpeckleDynamo
     public void RenameLayers(List<string> layers)
     {
 
-        _registeringPorts = true;
-        //collect connections
-        List<List<PortModel>> startPorts = new List<List<PortModel>>();
-        foreach(var i in InPorts)
+      _registeringPorts = true;
+      //collect connections
+      List<List<PortModel>> startPorts = new List<List<PortModel>>();
+      foreach (var i in InPorts)
+      {
+        startPorts.Add(new List<PortModel>());
+        foreach (var c in i.Connectors)
         {
-          startPorts.Add(new List<PortModel>());
-          foreach(var c in i.Connectors)
-            startPorts.Last().Add(c.Start);
+          startPorts.Last().Add(c.Start);
         }
-        InPorts.RemoveAll((p) => { return true; });
+      }
+      InPorts.RemoveAll((p) => { return true; });
 
-        //add new ports and old connections
-        for (var i = 0; i < layers.Count; i++)
+      //add new ports and old connections
+      for (var i = 0; i < layers.Count; i++)
+      {
+        InPorts.Add(new PortModel(PortType.Input, this, new PortData(layers[i], "")));
+        foreach (var s in startPorts[i])
         {
-          InPorts.Add(new PortModel(PortType.Input, this, new PortData(layers[i], "")));
-          foreach (var s in startPorts[i])
-            InPorts.Last().Connectors.Add(new ConnectorModel(s,InPorts.Last(),Guid.NewGuid()));
-        }       
-        RegisterAllPorts();
-        _registeringPorts = false;
-        Transmitting = true;
-        UpdateMetadata();
-      
+          InPorts.Last().Connectors.Add(new ConnectorModel(s, InPorts.Last(), Guid.NewGuid()));
+        }
+      }
+      RegisterAllPorts();
+      _registeringPorts = false;
+      Transmitting = true;
+      UpdateMetadata();
+
 
     }
 
     protected override void AddInput()
     {
       var name = GetSequence().ElementAt(InPorts.Count);
-      InPorts.Add(new PortModel(PortType.Input, this, new PortData(name, "Layer "+ name)));
+      InPorts.Add(new PortModel(PortType.Input, this, new PortData(name, "Layer " + name)));
 
       if (MetadataSender != null)
+      {
         UpdateMetadata();
+      }
     }
 
     protected override void RemoveInput()
@@ -534,7 +605,9 @@ namespace SpeckleDynamo
       }
 
       if (MetadataSender != null)
+      {
         UpdateMetadata();
+      }
     }
 
     public override bool IsConvertible
@@ -556,7 +629,10 @@ namespace SpeckleDynamo
     public override void Dispose()
     {
       if (mySender != null)
+      {
         mySender.Dispose();
+      }
+
       base.Dispose();
       /// Unregister the data bridge callback.
       VMDataBridge.DataBridge.Instance.UnregisterCallback(GUID.ToString());
@@ -570,7 +646,7 @@ namespace SpeckleDynamo
 
     protected override string GetInputTooltip(int index)
     {
-      return "Layer "+ InPorts[index].Name;
+      return "Layer " + InPorts[index].Name;
     }
 
     #endregion
@@ -581,7 +657,9 @@ namespace SpeckleDynamo
     {
       base.SerializeCore(element, context); // Base implementation must be called.
       if (mySender == null)
+      {
         return;
+      }
 
       //https://stackoverflow.com/questions/13674395/no-map-for-object-error-when-deserializing-object
       using (var input = new MemoryStream())
@@ -616,9 +694,14 @@ namespace SpeckleDynamo
       foreach (XmlNode subNode in element.ChildNodes)
       {
         if (!subNode.Name.Equals("Speckle"))
+        {
           continue;
+        }
+
         if (subNode.Attributes == null || (subNode.Attributes.Count <= 0))
+        {
           continue;
+        }
 
         foreach (XmlAttribute attr in subNode.Attributes)
         {
@@ -659,7 +742,7 @@ namespace SpeckleDynamo
     #endregion
 
 
-    static IEnumerable<string> GetSequence(string start = "")
+    private static IEnumerable<string> GetSequence(string start = "")
     {
       StringBuilder chars = start == null ? new StringBuilder() : new StringBuilder(start);
 
@@ -672,9 +755,14 @@ namespace SpeckleDynamo
           i--;
         }
         if (i == -1)
+        {
           chars.Insert(0, 'A');
+        }
         else
+        {
           chars[i]++;
+        }
+
         yield return chars.ToString();
       }
     }

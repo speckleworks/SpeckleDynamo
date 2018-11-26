@@ -54,7 +54,7 @@ namespace SpeckleDynamoExtension
     {
       readyParams = p;
 
-      var myForm = new SpecklePopup.MainWindow();
+      var myForm = new SpecklePopup.MainWindow(true, true);
 
       //if default account exists form is closed automatically
       if (!myForm.HasDefaultAccount)

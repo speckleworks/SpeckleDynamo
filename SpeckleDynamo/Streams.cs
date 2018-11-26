@@ -98,11 +98,11 @@ namespace SpeckleDynamo
       //saved receiver
       if (Client != null)
       {
-        AuthToken = Utils.Accounts.GetAuthToken(Email, RestApi);
+        AuthToken = Client.AuthToken;
         GetStreams();
         return;
       }
-      var myForm = new SpecklePopup.MainWindow();
+      var myForm = new SpecklePopup.MainWindow(true, true);
       //TODO: fix this it's crashing revit
       //myForm.Owner = Application.Current.MainWindow;
       this.DispatchOnUIThread(() =>
@@ -118,7 +118,7 @@ namespace SpeckleDynamo
           RestApi = myForm.restApi;
           AuthToken = myForm.apitoken;
 
-          Client = new SpeckleApiClient();
+          Client = new SpeckleApiClient();  
           GetStreams();
 
         }
@@ -133,7 +133,7 @@ namespace SpeckleDynamo
     {
       Client.BaseUrl = RestApi;
       Client.AuthToken = AuthToken;
-      Client.StreamsGetAllAsync().ContinueWith(tsk =>
+      Client.StreamsGetAllAsync("fields=streamId,name").ContinueWith(tsk =>
       {
         DispatchOnUIThread(() =>
         {
