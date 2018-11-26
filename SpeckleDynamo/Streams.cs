@@ -118,7 +118,7 @@ namespace SpeckleDynamo
           RestApi = myForm.restApi;
           AuthToken = myForm.apitoken;
 
-          Client = new SpeckleApiClient();
+          Client = new SpeckleApiClient();  
           GetStreams();
 
         }
@@ -133,7 +133,7 @@ namespace SpeckleDynamo
     {
       Client.BaseUrl = RestApi;
       Client.AuthToken = AuthToken;
-      Client.StreamsGetAllAsync().ContinueWith(tsk =>
+      Client.StreamsGetAllAsync("fields=streamId,name").ContinueWith(tsk =>
       {
         DispatchOnUIThread(() =>
         {
