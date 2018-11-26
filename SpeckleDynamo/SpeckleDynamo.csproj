@@ -170,7 +170,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SpeckleAccountManager\SpecklePopup.csproj">
+    <ProjectReference Include="..\SpeckleCore\SpeckleAccountManager\SpecklePopup.csproj">
       <Project>{d65594c8-ea2e-46ca-a756-b1634edc3ae3}</Project>
       <Name>SpecklePopup</Name>
     </ProjectReference>
