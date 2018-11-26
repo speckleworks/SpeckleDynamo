@@ -286,7 +286,7 @@ namespace SpeckleDynamo
       }
 
       Message = "Initialising...";
-      var myForm = new SpecklePopup.MainWindow();
+      var myForm = new SpecklePopup.MainWindow(true,true);
       // myForm.Owner = Application.Current.MainWindow;
       DispatchOnUIThread(() =>
       {

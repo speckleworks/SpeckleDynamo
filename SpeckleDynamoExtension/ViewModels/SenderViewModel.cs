@@ -51,14 +51,8 @@ namespace SpeckleDynamoExtension
     public SenderViewModel(ViewLoadedParams p)
     {
       readyParams = p;
-      //p.CurrentWorkspaceModel.NodeAdded += CurrentWorkspaceModel_NodeAdded;
-      //p.CurrentWorkspaceModel.NodeRemoved += CurrentWorkspaceModel_NodeRemoved;
-      //p.CurrentWorkspaceModel.ConnectorAdded += CurrentWorkspaceModel_ConnectorAdded;
-      //p.CurrentWorkspaceModel.ConnectorDeleted += CurrentWorkspaceModel_ConnectorDeleted;
 
-
-      var myForm = new SpecklePopup.MainWindow();
-      // myForm.Owner = Application.Current.MainWindow;
+      var myForm = new SpecklePopup.MainWindow(true, true);
 
       //if default account exists form is closed automatically
       if (!myForm.HasDefaultAccount)

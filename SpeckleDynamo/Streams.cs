@@ -102,7 +102,7 @@ namespace SpeckleDynamo
         GetStreams();
         return;
       }
-      var myForm = new SpecklePopup.MainWindow();
+      var myForm = new SpecklePopup.MainWindow(true, true);
       //TODO: fix this it's crashing revit
       //myForm.Owner = Application.Current.MainWindow;
       this.DispatchOnUIThread(() =>
