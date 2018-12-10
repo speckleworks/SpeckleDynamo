@@ -41,7 +41,8 @@ artifacts:
 
 notifications:
 - provider: Slack
-  incoming_webhook: https://hooks.slack.com/services/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
+  incoming_webhook:
+    secure: 9Kt/ImvGdsQ/dzmRdSaMIG+BO0R29MOJC7eZZnK5m5TyWwE+4nofEcYlb/r4lh9Z1Dx/bR+7oQtgAYO3W5s+qJshkT6Is9irYw3TfMZX7/M=
   channel: '#devtalk'
   template: Build <{{buildUrl}}|#{{buildVersion}}> (<{{commitUrl}}|{{commitId}}>) of {{repositoryName}}@{{branch}}) by {{commitAuthor}} {{status}} in {{duration}}
   on_build_success: false
