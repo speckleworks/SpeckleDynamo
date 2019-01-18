@@ -561,17 +561,28 @@ namespace SpeckleDynamo
       });
     }
 
-    internal void PausePlayButtonClick(object sender, RoutedEventArgs e)
+    internal void PauseToggleChecked(object sender, System.Windows.RoutedEventArgs e)
     {
-
-      Paused = !Paused;
       //if there's new data, get it on resume
       if (Expired && !Paused)
       {
         Expired = false;
-        //TODO: instead, we could store it in a local cache and release it
-        UpdateGlobal();
+        ForceDownload();
       }
+    }
+
+    internal void ForceDownloadButtonClick(object sender, RoutedEventArgs e)
+    {
+     
+    }
+
+    private void ForceDownload()
+    {
+      DispatchOnUIThread(() =>
+      {
+        Transmitting = true;
+        UpdateGlobal();
+      });
     }
 
     public virtual void OnWsMessage(object source, SpeckleEventArgs e)
@@ -584,7 +595,7 @@ namespace SpeckleDynamo
 
       if (Paused)
       {
-        Message = "Update available since " + DateTime.Now;
+        Message = "Update available since " + DateTime.Now.ToShortTimeString();
         Expired = true;
         return;
       }

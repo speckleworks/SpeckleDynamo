@@ -28,7 +28,8 @@ namespace SpeckleDynamo.ViewCustomizations
       //bindings   
       ui.DataContext = _receiver;
       ui.Loaded += _receiver.AddedToDocument;
-      ui.PausePlayButton.Click += _receiver.PausePlayButtonClick;
+      ui.ForceDownloadButton.Click += _receiver.ForceDownloadButtonClick;
+      ui.PauseToggle.Checked += _receiver.PauseToggleChecked;
       ui.StreamChanged += _receiver.StreamChanged;
 
       nodeView.ViewModel.DynamoViewModel.HomeSpace.RunSettings.PropertyChanged += RunSettings_PropertyChanged; ;
@@ -61,6 +62,8 @@ namespace SpeckleDynamo.ViewCustomizations
       nodeView.grid.ContextMenu.Items.Add(viewStreamData);
       nodeView.grid.ContextMenu.Items.Add(viewObjectsData);
     }
+
+
 
     private void RunSettings_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
