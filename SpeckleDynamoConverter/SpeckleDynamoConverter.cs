@@ -107,13 +107,13 @@ namespace SpeckleDynamo
       return DesignScript.Builtin.Dictionary.ByKeysValues(keys, values);
     }
 
-    public static Dictionary<string, object> GetSpeckleProperties(this Geometry geometry)
+    public static Dictionary<string, object> GetSpeckleProperties(this DesignScriptEntity geometry)
     {
       var userData =  geometry.Tags.LookupTag(speckleKey) as DesignScript.Builtin.Dictionary;
       return userData.ToSpeckleX();
     }
 
-    public static T SetSpeckleProperties<T>(this Geometry geometry, Dictionary<string, object> properties)
+    public static T SetSpeckleProperties<T>(this DesignScriptEntity geometry, Dictionary<string, object> properties)
     {
       if(properties != null)
       {
@@ -832,7 +832,7 @@ namespace SpeckleDynamo
       //}
 
       var speckleMesh = new SpeckleMesh(vertices, faces, colors, null, appId);
-      speckleMesh.Properties = mesh.Tags.LookupTag(speckleKey) as Dictionary<string, object>;
+      speckleMesh.Properties = mesh.GetSpeckleProperties();
       return speckleMesh;
     }
 
@@ -861,47 +861,10 @@ namespace SpeckleDynamo
       var dsMesh =  Mesh.ByPointsFaceIndices(points, faces);
       if(mesh.Properties != null)
       {
-        dsMesh.Tags.AddTag(speckleKey, mesh.Properties);
+        dsMesh.SetSpeckleProperties<Mesh>(mesh.Properties);
       }
       return dsMesh;
     }
-
-    //public static SpeckleObject ToSpeckle(this MetaObject meta)
-    //{
-    //  SpeckleObject obj = null;
-    //  if(meta.Object is double || meta.Object is int) { obj = ((double)meta.Object).ToSpeckle(); }
-    //  else if (meta.Object is Boolean) { obj = ((Boolean)meta.Object).ToSpeckle(); }
-    //  else if (meta.Object is String) { obj = ((String)meta.Object).ToSpeckle(); }
-    //  else if(meta.Object is Point) { obj = ((Point)meta.Object).ToSpeckle(); }
-    //  else if (meta.Object is Vector) { obj = ((Vector)meta.Object).ToSpeckle();  }
-    //  else if (meta.Object is Plane) { obj = ((Plane)meta.Object).ToSpeckle(); }
-    //  else if (meta.Object is Curve) { obj = ((Curve)meta.Object).ToSpeckle(); }
-    //  else if (meta.Object is Curve) { obj = ((Curve)meta.Object).ToSpeckle(); }
-
-    //  if(obj != null)
-    //  {
-    //    obj.Properties = meta._properties;
-    //    return obj;
-    //  }
-    //  else
-    //  {
-    //    return null;
-    //  }
-
-    //}
-
-    //public static object ToNative(this SpeckleObject speckleObject)
-    //{
-    //  object obj = speckleObject.ToNative();
-    //  if(speckleObject.Properties != null)
-    //  {
-    //    return MetaObject.ByObjectAndDictionaryInternal(obj, speckleObject.Properties);
-    //  }
-    //  else
-    //  {
-    //    return obj;
-    //  }
-    //}
 
   }
 }
