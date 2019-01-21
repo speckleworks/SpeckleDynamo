@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SpeckleDynamo.Functions</RootNamespace>
     <AssemblyName>SpeckleDynamo.Functions</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -30,56 +30,6 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <!-- START MULTI VERSION CONFIGURATION -->
-  <!-- ADDING BUILD COFIGURATION FOR EACH VERSION, DEBUG AND RELEASE -->
-  <!-- 1.3 -->
-  <!--<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug-1.3|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug-1.3\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;Version1.3</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <StartAction>Program</StartAction>
-    <StartProgram>C:\Program Files\Dynamo\Dynamo Revit\1.3\DynamoSandbox.exe</StartProgram>
-    <DynamoVersion>1.3</DynamoVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release-1.3|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release-1.3\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DynamoVersion>1.3</DynamoVersion>
-  </PropertyGroup>-->
-  <!-- 2.0 -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug-2\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;Version2.0</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <StartAction>Program</StartAction>
-    <StartProgram>C:\Program Files\Dynamo\Dynamo Core\2\DynamoSandbox.exe</StartProgram>
-    <DynamoVersion>2.0</DynamoVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release-2.0\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DynamoVersion>2.0</DynamoVersion>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugRevit|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\DebugRevit\</OutputPath>
@@ -89,8 +39,19 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-  <!-- END MULTIVERSION CONFIGURATION -->
   <ItemGroup>
+    <Reference Include="RevitAPI">
+      <HintPath>C:\Program Files\Autodesk\Revit 2019\RevitAPI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="RevitNodes">
+      <HintPath>C:\Program Files\Dynamo\Dynamo Revit\2\Revit_2019\RevitNodes.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="RevitServices">
+      <HintPath>C:\Program Files\Dynamo\Dynamo Revit\2\Revit_2019\RevitServices.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -107,6 +68,7 @@
     </Compile>
     <Compile Include="Functions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RevitUtils.cs" />
     <Compile Include="SpeckleTempData.cs" />
     <Compile Include="UserData.cs" />
   </ItemGroup>
@@ -148,6 +110,6 @@
     </GetAssemblyIdentity>
     <!-- Generate customization dll -->
     <GenerateResource UseSourcePath="true" Sources="$(ProjectDir)\SpeckleDynamoFunctionsImages.resx" OutputResources="$(ProjectDir)\SpeckleDynamoFunctionsImages.resources" References="$(FrameworkAssembliesPath)System.Drawing.dll" />
-    <AL TargetType="library" EmbedResources="$(ProjectDir)\SpeckleDynamoFunctionsImages.resources" OutputAssembly="$(SolutionDir)\SpeckleDynamo\bin\$(Configuration)\SpeckleDynamo.Functions.customization.dll" Version="%(AssemblyInfo.Version)" />
+    <AL TargetType="library" EmbedResources="$(ProjectDir)\SpeckleDynamoFunctionsImages.resources" OutputAssembly="$(OutDir)\SpeckleDynamo.Functions.customization.dll" Version="%(AssemblyInfo.Version)" />
   </Target>
 </Project>

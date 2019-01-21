@@ -8,4 +8,7 @@
       <category>Speckle</category>
     </namespace>
   </namespaces>
+  <namespace name="SpeckleDynamo.Functions">
+    <category>Speckle</category>
+  </namespace>
 </doc>
