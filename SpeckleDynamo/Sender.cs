@@ -35,8 +35,7 @@ namespace SpeckleDynamo
     private string _streamId;
     private bool _transmitting = false;
     private string _message = "Initialising...";
-    private bool _isFirstRun = true;
-private Timer MetadataSender, DataSender;
+    private Timer MetadataSender, DataSender;
     private ArrayList DataBridgeData = new ArrayList();
     private string BucketName;
     private List<Layer> BucketLayers = new List<Layer>();
@@ -75,6 +74,7 @@ private Timer MetadataSender, DataSender;
 
     public Sender()
     {
+      Transmitting = true;
       var hack = new ConverterHack();
       LocalContext.Init();
 
@@ -119,9 +119,8 @@ private Timer MetadataSender, DataSender;
         return Enumerable.Empty<AssociativeNode>();
       }
 
-      if (mySender == null || _isFirstRun)
+      if (mySender == null || mySender.StreamId == null || DataSender ==null)
       {
-        _isFirstRun = false;
         return Enumerable.Empty<AssociativeNode>();
       }
 
@@ -653,97 +652,6 @@ private Timer MetadataSender, DataSender;
     }
 
     #endregion
-
-    #region Serialization/Deserialization Methods
-
-    protected override void SerializeCore(XmlElement element, SaveContext context)
-    {
-      base.SerializeCore(element, context); // Base implementation must be called.
-      if (mySender == null)
-      {
-        return;
-      }
-
-      //https://stackoverflow.com/questions/13674395/no-map-for-object-error-when-deserializing-object
-      using (var input = new MemoryStream())
-      {
-        var formatter = new BinaryFormatter();
-        formatter.Serialize(input, mySender);
-        input.Seek(0, SeekOrigin.Begin);
-
-        using (MemoryStream output = new MemoryStream())
-        using (DeflateStream deflateStream = new DeflateStream(output, CompressionMode.Compress))
-        {
-          input.CopyTo(deflateStream);
-          deflateStream.Close();
-
-          var client = Convert.ToBase64String(output.ToArray());
-
-          var xmlDocument = element.OwnerDocument;
-          var subNode = xmlDocument.CreateElement("Speckle");
-          subNode.SetAttribute("speckleclient", client);
-          //could be part of the sender
-          subNode.SetAttribute("email", Email);
-          subNode.SetAttribute("server", Server);
-          element.AppendChild(subNode);
-        }
-      }
-    }
-
-    protected override void DeserializeCore(XmlElement element, SaveContext context)
-    {
-      base.DeserializeCore(element, context); //Base implementation must be called.
-
-      foreach (XmlNode subNode in element.ChildNodes)
-      {
-        if (!subNode.Name.Equals("Speckle"))
-        {
-          continue;
-        }
-
-        if (subNode.Attributes == null || (subNode.Attributes.Count <= 0))
-        {
-          continue;
-        }
-
-        foreach (XmlAttribute attr in subNode.Attributes)
-        {
-          switch (attr.Name)
-          {
-            case "speckleclient":
-              using (MemoryStream input = new MemoryStream(Convert.FromBase64String(attr.Value)))
-              using (DeflateStream deflateStream = new DeflateStream(input, CompressionMode.Decompress))
-              using (MemoryStream output = new MemoryStream())
-              {
-                deflateStream.CopyTo(output);
-                deflateStream.Close();
-                output.Seek(0, SeekOrigin.Begin);
-
-                BinaryFormatter bformatter = new BinaryFormatter();
-                mySender = (SpeckleApiClient)bformatter.Deserialize(output);
-                RestApi = mySender.BaseUrl;
-                StreamId = mySender.StreamId;
-                //_updatingPorts = 0;
-              }
-              break;
-            case "email":
-              Email = attr.Value;
-              break;
-            case "server":
-              Server = attr.Value;
-              break;
-            default:
-              Log(string.Format("{0} attribute could not be deserialized for {1}", attr.Name, GetType()));
-              break;
-          }
-        }
-
-        break;
-      }
-    }
-
-    #endregion
-
 
     private static IEnumerable<string> GetSequence(string start = "")
     {
