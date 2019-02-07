@@ -33,9 +33,10 @@ namespace SpeckleDynamo
     private string _email;
     private string _server;
     private string _streamId;
-    private bool _transmitting = true;
+    private bool _transmitting = false;
     private string _message = "Initialising...";
-    private Timer MetadataSender, DataSender;
+    private bool _isFirstRun = true;
+private Timer MetadataSender, DataSender;
     private ArrayList DataBridgeData = new ArrayList();
     private string BucketName;
     private List<Layer> BucketLayers = new List<Layer>();
@@ -46,7 +47,7 @@ namespace SpeckleDynamo
     internal Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
     public string DocumentName = "none";
     public string DocumentGuid = "none";
-    internal string Log { get; set; }
+    internal string Log { get; set; } = "";
     internal string AuthToken { get => _authToken; set { _authToken = value; RaisePropertyChanged("AuthToken"); } }
 
     #region public properties
@@ -54,6 +55,7 @@ namespace SpeckleDynamo
     public string Email { get => _email; set { _email = value; RaisePropertyChanged("Email"); } }
     public string Server { get => _server; set { _server = value; RaisePropertyChanged("Server"); } }
     public string StreamId { get => _streamId; set { _streamId = value; RaisePropertyChanged("StreamId"); } }
+    [JsonIgnore]
     public bool Transmitting { get => _transmitting; set { _transmitting = value; RaisePropertyChanged("Transmitting"); } }
     [JsonIgnore]
     public string Message { get => _message; set { _message = value; RaisePropertyChanged("Message"); } }
@@ -117,8 +119,9 @@ namespace SpeckleDynamo
         return Enumerable.Empty<AssociativeNode>();
       }
 
-      if (mySender == null || Log == null)
+      if (mySender == null || _isFirstRun)
       {
+        _isFirstRun = false;
         return Enumerable.Empty<AssociativeNode>();
       }
 
