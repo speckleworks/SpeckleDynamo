@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 
 //Updated automatically by AppVeyor!
 [assembly: AssemblyVersion("0.0.0.0")]
