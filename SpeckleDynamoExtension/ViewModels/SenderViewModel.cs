@@ -258,7 +258,7 @@ namespace SpeckleDynamoExtension
 
       var response = mySender.StreamUpdateAsync(mySender.StreamId, updateStream).Result;
 
-      mySender.BroadcastMessage(new { eventType = "update-global" });
+      mySender.BroadcastMessage("stream", mySender.StreamId, new { eventType = "update-global" });
 
       Message = "Data sent\n@" + DateTime.Now.ToString("HH:mm:ss");
       Transmitting = false;

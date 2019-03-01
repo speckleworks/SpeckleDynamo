@@ -323,7 +323,8 @@
     <ReplaceFileText PkgInput="$(ProjectDir)pkgempty.json" PkgOutput="$(ProjectDir)pkg.json" ReplacementText="@(VersionNumber)" />
     <!--Copying to Build Folder-->
     <Copy SourceFiles="@(SourceDlls)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />
-    <Copy SourceFiles="@(Source64)" DestinationFolder="$(TargetDir)$(PackageName)\bin\x64" />
+    <!-- To prevent sqlite not bundlding the dlls without a target architecture, copying this in the root rather than its subfolder.  -->
+    <Copy SourceFiles="@(Source64)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />
     <Copy SourceFiles="@(Source86)" DestinationFolder="$(TargetDir)$(PackageName)\bin\x86" />
     <Copy SourceFiles="@(SourcePdbs)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />
     <Copy SourceFiles="@(CustomizationXML)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />

@@ -75,14 +75,14 @@ namespace SpeckleDynamo
     [JsonConstructor]
     private Receiver(IEnumerable<PortModel> inPorts, IEnumerable<PortModel> outPorts) : base(inPorts, outPorts)
     {
-      var hack = new ConverterHack();
-      LocalContext.Init();
+      SpeckleCore.SpeckleInitializer.Initialize();
+      SpeckleCore.LocalContext.Init();
     }
 
     public Receiver()
     {
-      var hack = new ConverterHack();
-      LocalContext.Init();
+      SpeckleCore.SpeckleInitializer.Initialize();
+      SpeckleCore.LocalContext.Init();
       Transmitting = false;
       RegisterAllPorts();
     }
@@ -288,7 +288,7 @@ namespace SpeckleDynamo
       LocalContext.GetCachedObjects(myReceiver.Stream.Objects, myReceiver.BaseUrl);
 
       // filter out the objects that were not in the cache and still need to be retrieved
-      var payload = myReceiver.Stream.Objects.Where(o => o.Type == SpeckleObjectType.Placeholder).Select(obj => obj._id).ToArray();
+      var payload = myReceiver.Stream.Objects.Where(o => o.Type == "Placeholder").Select(obj => obj._id).ToArray();
 
       // how many objects to request from the api at a time
       int maxObjRequestCount = 20;
@@ -303,7 +303,7 @@ namespace SpeckleDynamo
         var subPayload = payload.Skip(i).Take(maxObjRequestCount).ToArray();
 
         // get it sync as this is always execed out of the main thread
-        var res = myReceiver.ObjectGetBulkAsync(subPayload, "omit=displayValue").Result;
+        var res = myReceiver.ObjectGetBulkAsync(subPayload, "").Result;
 
         // put them in our bucket
         newObjects.AddRange(res.Resources);
