@@ -67,16 +67,18 @@ namespace SpeckleDynamo
     [JsonConstructor]
     private Sender(IEnumerable<PortModel> inPorts, IEnumerable<PortModel> outPorts) : base(inPorts, outPorts)
     {
-      var hack = new ConverterHack();
-      LocalContext.Init();
+      SpeckleCore.SpeckleInitializer.Initialize();
+      SpeckleCore.LocalContext.Init();
+
       ArgumentLacing = LacingStrategy.Disabled;
     }
 
     public Sender()
     {
       Transmitting = true;
-      var hack = new ConverterHack();
-      LocalContext.Init();
+      
+      SpeckleCore.SpeckleInitializer.Initialize();
+      SpeckleCore.LocalContext.Init();
 
       OutPorts.Add(new PortModel(PortType.Output, this, new PortData("Log", "Log Data")));
       OutPorts.Add(new PortModel(PortType.Output, this, new PortData("ID", "Stream ID")));
@@ -394,7 +396,7 @@ namespace SpeckleDynamo
 
         List<SpeckleObject> persistedObjects = new List<SpeckleObject>();
 
-        if (convertedObjects.Count(obj => obj.Type == SpeckleObjectType.Placeholder) != convertedObjects.Count)
+        if (convertedObjects.Count(obj => obj.Type == "Placeholder") != convertedObjects.Count)
         {
           // create the update payloads
           int count = 0;
@@ -462,7 +464,7 @@ namespace SpeckleDynamo
               {
                 oL._id = objResponse.Resources[m++]._id;
 
-                if (oL.Type != SpeckleObjectType.Placeholder)
+                if (oL.Type != "Placeholder")
                 {
                   LocalContext.AddSentObject(oL, mySender.BaseUrl);
                 }
@@ -505,7 +507,7 @@ namespace SpeckleDynamo
 
         var response = mySender.StreamUpdateAsync(mySender.StreamId, updateStream).Result;
 
-        mySender.BroadcastMessage(new { eventType = "update-global" });
+        mySender.BroadcastMessage("stream", mySender.StreamId, new { eventType = "update-global" });
 
         Log += response.Message;
         Message = "Data sent\n@" + DateTime.Now.ToString("HH:mm:ss");
@@ -538,7 +540,7 @@ namespace SpeckleDynamo
       var updateResult = mySender.StreamUpdateAsync(mySender.StreamId, updateStream).GetAwaiter().GetResult();
 
       Log += updateResult.Message;
-      mySender.BroadcastMessage(new { eventType = "update-meta" });
+      mySender.BroadcastMessage( "stream", mySender.StreamId, new { eventType = "update-meta" });
       Transmitting = false;
     }
 

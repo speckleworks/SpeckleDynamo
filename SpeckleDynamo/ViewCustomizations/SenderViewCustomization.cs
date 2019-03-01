@@ -82,7 +82,7 @@ namespace SpeckleDynamo
         var cloneResult = _sender.mySender.StreamCloneAsync(_sender.StreamId).Result;
         _sender.mySender.Stream.Children.Add(cloneResult.Clone.StreamId);
 
-        _sender.mySender.BroadcastMessage(new { eventType = "update-children" });
+        _sender.mySender.BroadcastMessage("stream", _sender.StreamId, new { eventType = "update-children" });
 
         System.Windows.MessageBox.Show("Stream version saved. CloneId: " + cloneResult.Clone.StreamId);
       };

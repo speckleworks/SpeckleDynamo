@@ -75,14 +75,14 @@ namespace SpeckleDynamo
     [JsonConstructor]
     private Receiver(IEnumerable<PortModel> inPorts, IEnumerable<PortModel> outPorts) : base(inPorts, outPorts)
     {
-      var hack = new ConverterHack();
-      LocalContext.Init();
+      SpeckleCore.SpeckleInitializer.Initialize();
+      SpeckleCore.LocalContext.Init();
     }
 
     public Receiver()
     {
-      var hack = new ConverterHack();
-      LocalContext.Init();
+      SpeckleCore.SpeckleInitializer.Initialize();
+      SpeckleCore.LocalContext.Init();
       Transmitting = false;
       RegisterAllPorts();
     }
@@ -288,7 +288,7 @@ namespace SpeckleDynamo
       LocalContext.GetCachedObjects(myReceiver.Stream.Objects, myReceiver.BaseUrl);
 
       // filter out the objects that were not in the cache and still need to be retrieved
-      var payload = myReceiver.Stream.Objects.Where(o => o.Type == SpeckleObjectType.Placeholder).Select(obj => obj._id).ToArray();
+      var payload = myReceiver.Stream.Objects.Where(o => o.Type == "Placeholder").Select(obj => obj._id).ToArray();
 
       // how many objects to request from the api at a time
       int maxObjRequestCount = 20;
