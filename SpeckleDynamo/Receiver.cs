@@ -303,7 +303,7 @@ namespace SpeckleDynamo
         var subPayload = payload.Skip(i).Take(maxObjRequestCount).ToArray();
 
         // get it sync as this is always execed out of the main thread
-        var res = myReceiver.ObjectGetBulkAsync(subPayload, "omit=displayValue").Result;
+        var res = myReceiver.ObjectGetBulkAsync(subPayload, "").Result;
 
         // put them in our bucket
         newObjects.AddRange(res.Resources);
