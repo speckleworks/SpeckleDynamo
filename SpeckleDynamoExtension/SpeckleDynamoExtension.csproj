@@ -126,7 +126,7 @@
       <Version>2.5.1</Version>
     </PackageReference>
     <PackageReference Include="NUnit">
-      <Version>3.11.0</Version>
+      <Version>3.10.1</Version>
     </PackageReference>
     <!-- END MULTIVERSION REFERENCES -->
     <Reference Include="PresentationCore" />
