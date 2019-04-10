@@ -1,4 +1,5 @@
 ﻿using Dynamo.Core;
+using Dynamo.Graph.Connectors;
 using Dynamo.Graph.Nodes;
 using Dynamo.Graph.Workspaces;
 using Dynamo.Models;
@@ -7,7 +8,6 @@ using Dynamo.ViewModels;
 using Dynamo.Wpf.Extensions;
 using Newtonsoft.Json;
 using SpeckleCore;
-using SpeckleDynamoConverter;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -293,4 +293,13 @@ namespace SpeckleDynamoExtension
     }
   }
 
+  public class SpeckleDynamoWorkspace
+  {
+
+    public List<NodeModel> Nodes { get; set; }
+    public List<ConnectorModel> Connectors { get; set; }
+    public ExtraWorkspaceViewInfo View { get; set; }
+
+
+  }
 }
