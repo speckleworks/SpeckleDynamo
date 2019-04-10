@@ -1,7 +1,8 @@
-﻿using Autodesk.DesignScript.Runtime;
+﻿extern alias SpeckleNewtonsoft;
+using Autodesk.DesignScript.Runtime;
 using Autodesk.DesignScript.Geometry;
 using Dynamo.Graph.Nodes.ZeroTouch;
-using Newtonsoft.Json;
+using SpeckleNewtonsoft.Newtonsoft.Json;
 
 using SpeckleCore;
 

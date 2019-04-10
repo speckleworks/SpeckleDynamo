@@ -1,4 +1,5 @@
-﻿using Dynamo.Graph.Connectors;
+﻿extern alias SpeckleNewtonsoft;
+using Dynamo.Graph.Connectors;
 using Dynamo.Graph.Nodes;
 using SpeckleCore;
 using System;
@@ -7,7 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Xml;
 using Dynamo.Graph.Workspaces;
-using Newtonsoft.Json;
+using SpeckleNewtonsoft.Newtonsoft.Json;
 
 namespace SpeckleDynamoConverter
 {
