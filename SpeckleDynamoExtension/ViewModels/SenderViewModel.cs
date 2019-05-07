@@ -7,7 +7,6 @@ using Dynamo.ViewModels;
 using Dynamo.Wpf.Extensions;
 using Newtonsoft.Json;
 using SpeckleCore;
-using SpeckleDynamoConverter;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -294,5 +293,10 @@ namespace SpeckleDynamoExtension
 
     return result;
   }
+  }
+
+  public class SpeckleNodeEvent
+  {
+    public string Json { get; set; }
   }
 }
