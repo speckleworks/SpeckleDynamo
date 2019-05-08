@@ -119,6 +119,7 @@ namespace SpeckleDynamo
           AuthToken = myForm.apitoken;
 
           Client = new SpeckleApiClient();  
+
           GetStreams();
 
         }
@@ -131,6 +132,15 @@ namespace SpeckleDynamo
 
     private void GetStreams()
     {
+      //caching streams
+      if(DateTime.Now.Subtract(Globals.LastCheckedStreams).Seconds < 10)
+      {
+        UserStreams.Clear();
+        UserStreams.AddRange(Globals.UserStreams);
+        Transmitting = false;
+        return;
+      }
+
       Client.BaseUrl = RestApi;
       Client.AuthToken = AuthToken;
       Client.StreamsGetAllAsync("fields=streamId,name").ContinueWith(tsk =>
@@ -140,6 +150,8 @@ namespace SpeckleDynamo
           UserStreams.Clear();
           UserStreams.AddRange(tsk.Result.Resources.ToList());
           Transmitting = false;
+          Globals.LastCheckedStreams = DateTime.Now;
+          Globals.UserStreams = UserStreams;
         });
       });
     }
@@ -153,94 +165,6 @@ namespace SpeckleDynamo
         Client.Dispose();
       base.Dispose();
     }
-
-
-
-    #region Serialization/Deserialization Methods
-
-    protected override void SerializeCore(XmlElement element, SaveContext context)
-    {
-      base.SerializeCore(element, context); // Base implementation must be called.
-      if (Client == null)
-        return;
-
-      //https://stackoverflow.com/questions/13674395/no-map-for-object-error-when-deserializing-object
-      using (var input = new MemoryStream())
-      {
-        var formatter = new BinaryFormatter();
-        formatter.Serialize(input, Client);
-        input.Seek(0, SeekOrigin.Begin);
-
-        using (MemoryStream output = new MemoryStream())
-        using (DeflateStream deflateStream = new DeflateStream(output, CompressionMode.Compress))
-        {
-          input.CopyTo(deflateStream);
-          deflateStream.Close();
-
-          var client = Convert.ToBase64String(output.ToArray());
-
-          var xmlDocument = element.OwnerDocument;
-          var subNode = xmlDocument.CreateElement("Speckle");
-          subNode.SetAttribute("speckleclient", client);
-          //could be part of the sender
-          subNode.SetAttribute("stream", StreamId);
-          subNode.SetAttribute("email", Email);
-          subNode.SetAttribute("server", Server);
-          element.AppendChild(subNode);
-        }
-      }
-    }
-
-    protected override void DeserializeCore(XmlElement element, SaveContext context)
-    {
-      base.DeserializeCore(element, context); //Base implementation must be called.
-
-      foreach (XmlNode subNode in element.ChildNodes)
-      {
-        if (!subNode.Name.Equals("Speckle"))
-          continue;
-        if (subNode.Attributes == null || (subNode.Attributes.Count <= 0))
-          continue;
-
-        // _coldStart = true;
-        foreach (XmlAttribute attr in subNode.Attributes)
-        {
-          switch (attr.Name)
-          {
-            case "speckleclient":
-              using (MemoryStream input = new MemoryStream(Convert.FromBase64String(attr.Value)))
-              using (DeflateStream deflateStream = new DeflateStream(input, CompressionMode.Decompress))
-              using (MemoryStream output = new MemoryStream())
-              {
-                deflateStream.CopyTo(output);
-                deflateStream.Close();
-                output.Seek(0, SeekOrigin.Begin);
-
-                BinaryFormatter bformatter = new BinaryFormatter();
-                Client = (SpeckleApiClient)bformatter.Deserialize(output);
-                RestApi = Client.BaseUrl;
-              }
-              break;
-            case "stream":
-              StreamId = attr.Value;
-              break;
-            case "email":
-              Email = attr.Value;
-              break;
-            case "server":
-              Server = attr.Value;
-              break;
-            default:
-              Log(string.Format("{0} attribute could not be deserialized for {1}", attr.Name, GetType()));
-              break;
-          }
-        }
-
-        break;
-      }
-    }
-
-    #endregion
 
     public event PropertyChangedEventHandler PropertyChanged;
     private void NotifyPropertyChanged(String info)
