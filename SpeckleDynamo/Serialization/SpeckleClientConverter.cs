@@ -40,6 +40,9 @@ namespace SpeckleDynamo.Serialization
 
     public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
     {
+      // Fixes https://github.com/speckleworks/SpeckleDynamo/issues/61
+      SpeckleCore.SpeckleInitializer.Initialize();
+      // Carry on as usual (NOTE: we need to clean this up)
       SpeckleApiClient client = null;
       var obj = JValue.Load(reader);
       try
