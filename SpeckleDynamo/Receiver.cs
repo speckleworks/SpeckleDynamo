@@ -312,11 +312,19 @@ namespace SpeckleDynamo
 
       foreach (var obj in newObjects)
       {
-        var locationInStream = myReceiver.Stream.Objects.FindIndex(o => o._id == obj._id);
-        try { myReceiver.Stream.Objects[locationInStream] = obj; } catch { }
+        //var locationInStream = myReceiver.Stream.Objects.FindIndex(o => o._id == obj._id);
+        //try { myReceiver.Stream.Objects[locationInStream] = obj; } catch { }
 
-        // add objects to cache
-        LocalContext.AddCachedObject(obj, myReceiver.BaseUrl);
+        //TODO: Do this efficiently, this is rather brute force
+        for( int i = myReceiver.Stream.Objects.Count - 1; i >= 0; i-- )
+        {
+          if( myReceiver.Stream.Objects[ i ]._id == obj._id )
+          {
+            myReceiver.Stream.Objects[ i ] = obj;
+          }
+        }
+          // add objects to cache
+          LocalContext.AddCachedObject(obj, myReceiver.BaseUrl);
       }
 
       ConvertedObjects = SpeckleCore.Converter.Deserialise(myReceiver.Stream.Objects);
