@@ -16,6 +16,6 @@
   "contains_binaries": true,
   "node_libraries": [
     "SpeckleDynamo, Version={{{version}}}, Culture=neutral, PublicKeyToken=null",
-    "SpeckleDynamo.Functions, Version={{{version}}}, Culture=neutral, PublicKeyToken=null"
+    "SpeckleDynamoFunctions, Version={{{version}}}, Culture=neutral, PublicKeyToken=null"
   ]
 }

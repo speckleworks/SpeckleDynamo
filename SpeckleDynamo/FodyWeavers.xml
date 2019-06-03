@@ -2,12 +2,15 @@
 <Weavers xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="FodyWeavers.xsd">
   <Costura>
     <ExcludeAssemblies>
-      SpeckleDynamo.customization
-      SpeckleDynamo.Functions
-      SpeckleDynamoConverter
-      SpeckleDynamoExtension
-      SpecklePopup
-      e_sqlite3
+        SpeckleDynamo.customization
+        SpeckleDynamoFunctions
+        SpeckleDynamoConverter
+        SpeckleDynamoExtension
+        SpecklePopup
+        SpeckleCore
+        SpeckleNewtonsoft
+        Newtonsoft.Json
+        e_sqlite3
     </ExcludeAssemblies>
   </Costura>
 </Weavers>
