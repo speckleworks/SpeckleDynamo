@@ -4,11 +4,7 @@
 
 ![speckle-demo](https://user-images.githubusercontent.com/2679513/41601159-99a0499a-73cf-11e8-90b9-36b43a822076.gif)
 
-Speckle for Dynamo **Alpha** is out! Get the latest version from the Dynamo Package Manager.
-
-**IMPORTANT:**
-
-**The Receiver will often show a warning regarding `Dictionary.ByKeysValues operation failed`. [We are aware of that](https://github.com/speckleworks/SpeckleDynamo/issues/20) and are working with the Dynamo team to fix it. Nothing to worry about for the moment!**
+Speckle for Dynamo is out! 
 
 ---
 ## Contents
@@ -27,12 +23,7 @@ Speckle for Dynamo **Alpha** is out! Get the latest version from the Dynamo Pack
 
 ## Installation
 
-Install it from the package manager:
-
-![1529326850938](https://user-images.githubusercontent.com/2679513/41541682-f16d9d50-730a-11e8-8d98-632ca20523ff.png)
-
-Latest release is 0.0.5 Alpha.
-Currently supported geometry types can be found here: https://github.com/speckleworks/SpeckleDynamo/issues/10
+> The [latest build is here](https://github.com/speckleworks/SpeckleInstaller/releases/latest). Be sure to check out the [getting started guide](https://speckle.works/log/speckle-guide/) to get up to speed with some basics.
 
 ## Usage
 
