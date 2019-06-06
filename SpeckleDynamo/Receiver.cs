@@ -4,6 +4,8 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Xml;
 using Dynamo.Graph;
@@ -52,6 +54,7 @@ namespace SpeckleDynamo
     private Dictionary<string, SpeckleObject> ObjectCache = new Dictionary<string, SpeckleObject>();
     internal string AuthToken { get => _authToken; set { _authToken = value; RaisePropertyChanged("AuthToken"); } }
     internal bool Expired = false;
+
     #region public properties
     public string RestApi { get => _restApi; set { _restApi = value; RaisePropertyChanged("RestApi"); } }
     public string Email { get => _email; set { _email = value; RaisePropertyChanged("Email"); } }
@@ -316,15 +319,15 @@ namespace SpeckleDynamo
         //try { myReceiver.Stream.Objects[locationInStream] = obj; } catch { }
 
         //TODO: Do this efficiently, this is rather brute force
-        for( int i = myReceiver.Stream.Objects.Count - 1; i >= 0; i-- )
+        for (int i = myReceiver.Stream.Objects.Count - 1; i >= 0; i--)
         {
-          if( myReceiver.Stream.Objects[ i ]._id == obj._id )
+          if (myReceiver.Stream.Objects[i]._id == obj._id)
           {
-            myReceiver.Stream.Objects[ i ] = obj;
+            myReceiver.Stream.Objects[i] = obj;
           }
         }
-          // add objects to cache
-          LocalContext.AddCachedObject(obj, myReceiver.BaseUrl);
+        // add objects to cache
+        LocalContext.AddCachedObject(obj, myReceiver.BaseUrl);
       }
 
       ConvertedObjects = SpeckleCore.Converter.Deserialise(myReceiver.Stream.Objects);
@@ -569,17 +572,15 @@ namespace SpeckleDynamo
       });
     }
 
-    internal void PausePlayButtonClick(object sender, RoutedEventArgs e)
+    internal void ForceReceiveButton(object sender, RoutedEventArgs e)
     {
-
-      Paused = !Paused;
-      //if there's new data, get it on resume
-      if (Expired && !Paused)
+      Task.Factory.StartNew(() =>
       {
-        Expired = false;
-        //TODO: instead, we could store it in a local cache and release it
+        Transmitting = true;
         UpdateGlobal();
-      }
+      },
+      CancellationToken.None);
+
     }
 
     public virtual void OnWsMessage(object source, SpeckleEventArgs e)

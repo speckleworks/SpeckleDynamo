@@ -30,69 +30,68 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
-    <Grid Grid.Row="0">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="auto" />
-      </Grid.ColumnDefinitions>
-      <TextBox
-        Name="Stream"
-        Grid.Column="0"
-        Margin="5"
-        materialDesign:HintAssist.Hint="Stream ID"
-        IsEnabled="{Binding StreamTextBoxEnabled}"
-        LostFocus="Stream_LostFocus"
-        Style="{StaticResource MaterialDesignFloatingHintTextBox}"
-        Text="{Binding StreamId, UpdateSourceTrigger=PropertyChanged}" />
+    <TextBox
+      Name="Stream"
+      Grid.Row="0"
+      Margin="5"
+      materialDesign:HintAssist.Hint="Stream ID"
+      IsEnabled="{Binding StreamTextBoxEnabled}"
+      LostFocus="Stream_LostFocus"
+      Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+      Text="{Binding StreamId, UpdateSourceTrigger=PropertyChanged}" />
+
+    <StackPanel Grid.Row="1" Orientation="Horizontal">
       <Button
-        Grid.Column="1"
         Width="20"
         Height="20"
-        Margin="0,0,5,0"
-        Padding="2"
-        Background="#CBC6BE"
+        Margin="5"
         BorderThickness="0"
         Click="Button_Click"
         Content="{materialDesign:PackIcon ContentPaste}"
-        Foreground="#4C4B4A"
         IsEnabled="{Binding StreamTextBoxEnabled}"
+        Style="{StaticResource MaterialDesignFloatingActionLightButton}"
         ToolTip="Paste Stream ID" />
-    </Grid>
+      <ToggleButton
+        Margin="0,5"
+        HorizontalAlignment="Left"
+        IsChecked="{Binding Paused, Converter={StaticResource InverseBooleanConverter}}"
+        Style="{StaticResource MaterialDesignSwitchToggleButton}"
+        ToolTip="Toggle auto receiving" />
+    </StackPanel>
 
     <Button
-      Name="PausePlayButton"
-      Grid.Row="1"
+      Name="ForceReceiveButton"
+      Grid.Row="2"
       Width="30"
       Height="30"
       Margin="5"
+      HorizontalAlignment="Center"
       materialDesign:ButtonProgressAssist.IsIndeterminate="{Binding Transmitting}"
       materialDesign:ButtonProgressAssist.IsIndicatorVisible="{Binding Transmitting}"
       materialDesign:ButtonProgressAssist.Value="-1"
+      IsEnabled="{Binding Initialized}"
       Style="{StaticResource MaterialDesignFloatingActionLightButton}"
-      ToolTip="Pause/Resume receiving">
+      ToolTip="Force Refresh">
       <Grid>
         <materialDesign:PackIcon
           Width="20"
           Height="24"
-          Kind="Pause"
-          Visibility="{Binding Paused, Converter={StaticResource BoolVisibConverter}, ConverterParameter='opposite', FallbackValue=Visible}" />
-        <materialDesign:PackIcon
-          Width="20"
-          Height="24"
-          Kind="Play"
-          Visibility="{Binding Paused, Converter={StaticResource BoolVisibConverter}, FallbackValue=Hidden}" />
+          Kind="Download" />
       </Grid>
     </Button>
+
+
     <Label
-      Grid.Row="2"
+      Grid.Row="3"
       HorizontalAlignment="Center"
       HorizontalContentAlignment="Center"
       Content="{Binding Message}"
       FontSize="10"
       Foreground="OrangeRed" />
     <StackPanel
-      Grid.Row="3"
+      Grid.Row="4"
       Margin="2"
       Orientation="Horizontal">
       <Label
