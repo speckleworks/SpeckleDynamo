@@ -28,7 +28,7 @@ namespace SpeckleDynamo.ViewCustomizations
       //bindings   
       ui.DataContext = _receiver;
       ui.Loaded += _receiver.AddedToDocument;
-      ui.PausePlayButton.Click += _receiver.PausePlayButtonClick;
+      ui.ForceReceiveButton.Click += _receiver.ForceReceiveButton;
       ui.StreamChanged += _receiver.StreamChanged;
 
       nodeView.ViewModel.DynamoViewModel.HomeSpace.RunSettings.PropertyChanged += RunSettings_PropertyChanged; ;
