@@ -153,11 +153,11 @@
       <HintPath>..\packages\DynamoVisualProgramming.ZeroTouchLibrary.2.0.2.6986\lib\net45\ProtoGeometry.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="SpeckleCore, Version=1.5.1.318, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\packages\SpeckleCore.1.5.1.318\lib\net45\SpeckleCore.dll</HintPath>
+    <Reference Include="SpeckleCore, Version=1.5.1.326, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\SpeckleCore.1.5.1.326\lib\net45\SpeckleCore.dll</HintPath>
     </Reference>
-    <Reference Include="SpecklePopup, Version=1.5.1.5, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SpecklePopup.1.5.1.5\lib\net45\SpecklePopup.dll</HintPath>
+    <Reference Include="SpecklePopup, Version=1.5.1.9, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SpecklePopup.1.5.1.9\lib\net45\SpecklePopup.dll</HintPath>
     </Reference>
     <Reference Include="SQLite-net, Version=1.5.231.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\sqlite-net-pcl.1.5.231\lib\netstandard1.1\SQLite-net.dll</HintPath>
