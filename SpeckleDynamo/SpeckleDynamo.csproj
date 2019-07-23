@@ -138,9 +138,8 @@
       <HintPath>..\packages\CommonServiceLocator.1.0\lib\NET35\Microsoft.Practices.ServiceLocation.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="nunit.framework, Version=2.6.3.13283, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <HintPath>..\packages\NUnit.2.6.3\lib\nunit.framework.dll</HintPath>
@@ -154,9 +153,11 @@
       <HintPath>..\packages\DynamoVisualProgramming.ZeroTouchLibrary.2.0.2.6986\lib\net45\ProtoGeometry.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="SpeckleNewtonsoft">
-      <HintPath>..\SpeckleCore\SpeckleNewtonsoft.dll</HintPath>
-      <Aliases>SpeckleNewtonsoft</Aliases>
+    <Reference Include="SpeckleCore, Version=1.5.1.326, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\SpeckleCore.1.5.1.326\lib\net45\SpeckleCore.dll</HintPath>
+    </Reference>
+    <Reference Include="SpecklePopup, Version=1.5.1.9, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SpecklePopup.1.5.1.9\lib\net45\SpecklePopup.dll</HintPath>
     </Reference>
     <Reference Include="SQLite-net, Version=1.5.231.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\sqlite-net-pcl.1.5.231\lib\netstandard1.1\SQLite-net.dll</HintPath>
@@ -192,6 +193,9 @@
     <Reference Include="VMDataBridge, Version=2.0.2.6986, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\DynamoVisualProgramming.Core.2.0.2.6986\lib\net45\VMDataBridge.dll</HintPath>
       <Private>False</Private>
+    </Reference>
+    <Reference Include="websocket-sharp, Version=1.0.2.32519, Culture=neutral, PublicKeyToken=5660b08a1845a91e, processorArchitecture=MSIL">
+      <HintPath>..\packages\WebSocketSharp-NonPreRelease.1.0.0\lib\net35\websocket-sharp.dll</HintPath>
     </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
@@ -262,16 +266,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SpeckleCore\SpeckleAccountManager\SpecklePopup.csproj">
-      <Project>{d65594c8-ea2e-46ca-a756-b1634edc3ae3}</Project>
-      <Name>SpecklePopup</Name>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\SpeckleCore\SpeckleCore\SpeckleCore.csproj">
-      <Project>{cfe27d3d-8a1a-43f9-9387-8fd9e119e174}</Project>
-      <Name>SpeckleCore</Name>
-      <Private>True</Private>
-    </ProjectReference>
     <ProjectReference Include="..\SpeckleDynamoExtension\SpeckleDynamoExtension.csproj">
       <Project>{146ebf48-e7a0-4abe-809d-d7f3059e4ee1}</Project>
       <Name>SpeckleDynamoExtension</Name>
@@ -402,7 +396,8 @@
   </Target>
   <Target Name="PackageDirectoryBuild">
     <ItemGroup>
-      <SourceDlls Include="$(TargetDir)*.dll" Exclude="$(TargetDir)*Newtonsoft.Json.dll" />
+      <SourceDlls Include="$(TargetDir)*.dll" />
+      <!--Exclude="$(TargetDir)*Newtonsoft.Json.dll"-->
       <Source64 Include="$(TargetDir)x64\**" />
       <Source86 Include="$(TargetDir)x86\**" />
       <SourcePdbs Include="$(TargetDir)*.pdb" />
@@ -415,7 +410,7 @@
     <!--Copying to Build Folder-->
     <Copy SourceFiles="@(SourceDlls)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />
     <!-- To prevent sqlite not bundlding the dlls without a target architecture, copying this in the root rather than its subfolder.  -->
-    <Copy SourceFiles="@(Source64)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />
+    <Copy SourceFiles="@(Source64)" DestinationFolder="$(TargetDir)$(PackageName)\bin\x64" />
     <Copy SourceFiles="@(Source86)" DestinationFolder="$(TargetDir)$(PackageName)\bin\x86" />
     <Copy SourceFiles="@(SourcePdbs)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />
     <Copy SourceFiles="@(CustomizationXML)" DestinationFolder="$(TargetDir)$(PackageName)\bin\" />
