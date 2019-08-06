@@ -1,5 +1,7 @@
-﻿using Dynamo.Graph.Nodes;
-using Newtonsoft.Json;
+﻿extern alias DynamoNewtonsoft;
+using DNJ = DynamoNewtonsoft::Newtonsoft.Json;
+
+using Dynamo.Graph.Nodes;
 using ProtoCore.AST.AssociativeAST;
 using System.Collections.Generic;
 using Dynamo.Utilities;
@@ -35,7 +37,7 @@ namespace Test
     private List<string> portnames = new List<string>();
     private List<StringNode> outnodes = new List<StringNode>();
 
-    [JsonConstructor]
+    [DNJ.JsonConstructor]
     private Test(IEnumerable<PortModel> inPorts, IEnumerable<PortModel> outPorts) : base(inPorts, outPorts)
     {
       ArgumentLacing = LacingStrategy.Disabled;

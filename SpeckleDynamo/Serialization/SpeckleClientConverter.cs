@@ -1,25 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Dynamo.Configuration;
-using Dynamo.Core;
-using Dynamo.Engine;
-using Dynamo.Graph.Annotations;
-using Dynamo.Graph.Connectors;
-using Dynamo.Graph.Nodes;
-using Dynamo.Graph.Nodes.CustomNodes;
-using Dynamo.Graph.Nodes.NodeLoaders;
-using Dynamo.Graph.Nodes.ZeroTouch;
-using Dynamo.Graph.Notes;
-using Dynamo.Graph.Presets;
-using Dynamo.Library;
-using Dynamo.Scheduler;
-using Dynamo.Utilities;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
-using ProtoCore;
-using ProtoCore.Namespace;
+﻿extern alias DynamoNewtonsoft;
+using DNJ = DynamoNewtonsoft::Newtonsoft.Json;
+
 using Type = System.Type;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -31,20 +12,20 @@ using System.IO.Compression;
 
 namespace SpeckleDynamo.Serialization
 {
-  public class SpeckleClientConverter : JsonConverter
+  public class SpeckleClientConverter : DNJ.JsonConverter
   {
     public override bool CanConvert(Type objectType)
     {
       return objectType == typeof(SpeckleApiClient);
     }
 
-    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    public override object ReadJson(DNJ.JsonReader reader, Type objectType, object existingValue, DNJ.JsonSerializer serializer)
     {
       // Fixes https://github.com/speckleworks/SpeckleDynamo/issues/61
       SpeckleCore.SpeckleInitializer.Initialize();
       // Carry on as usual (NOTE: we need to clean this up)
       SpeckleApiClient client = null;
-      var obj = JValue.Load(reader);
+      var obj = DNJ.Linq.JValue.Load(reader);
       try
       {
         var bytes = (byte[])obj;
@@ -71,7 +52,7 @@ namespace SpeckleDynamo.Serialization
       return client;
     }
 
-    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+    public override void WriteJson(DNJ.JsonWriter writer, object value, DNJ.JsonSerializer serializer)
     {
       var client = (SpeckleApiClient)value;
       //cannot remove auth token from saved files as below since this method gets triggered 

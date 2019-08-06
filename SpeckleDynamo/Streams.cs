@@ -1,7 +1,8 @@
-﻿using Dynamo.Graph;
+﻿extern alias DynamoNewtonsoft;
+using DNJ = DynamoNewtonsoft::Newtonsoft.Json;
+
 using Dynamo.Graph.Nodes;
 using Dynamo.Utilities;
-using Newtonsoft.Json;
 using ProtoCore.AST.AssociativeAST;
 using SpeckleCore;
 using SpeckleDynamo.Serialization;
@@ -56,19 +57,19 @@ namespace SpeckleDynamo
     public bool Transmitting { get => _transmitting; set { _transmitting = value; NotifyPropertyChanged("Transmitting"); } }
 
 
-    [JsonIgnore]
+    [DNJ.JsonIgnore]
     public ObservableCollection<SpeckleStream> UserStreams { get => _userStreams; set { _userStreams = value; NotifyPropertyChanged("UserStreams"); } }
-    [JsonIgnore]
+    [DNJ.JsonIgnore]
     List<SpeckleStream> SharedStreams = new List<SpeckleStream>();
-    [JsonIgnore]
-    [JsonConverter(typeof(SpeckleClientConverter))]
+    [DNJ.JsonIgnore]
+    [DNJ.JsonConverter(typeof(SpeckleClientConverter))]
     SpeckleApiClient Client;
 
 
     #endregion
 
 
-    [JsonConstructor]
+    [DNJ.JsonConstructor]
     private Streams(IEnumerable<PortModel> inPorts, IEnumerable<PortModel> outPorts) : base(inPorts, outPorts)
     {
     }
