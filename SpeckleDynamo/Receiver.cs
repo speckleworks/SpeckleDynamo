@@ -1,4 +1,7 @@
-﻿using System;
+﻿extern alias DynamoNewtonsoft;
+using DNJ = DynamoNewtonsoft::Newtonsoft.Json;
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -13,7 +16,6 @@ using Dynamo.Graph.Connectors;
 using Dynamo.Graph.Nodes;
 using Dynamo.Models;
 using Dynamo.Utilities;
-using Newtonsoft.Json;
 using ProtoCore.AST.AssociativeAST;
 using SpeckleCore;
 using SpeckleDynamo.Serialization;
@@ -66,16 +68,16 @@ namespace SpeckleDynamo
     internal RunType RunType;
 
     public string OldStreamId;
-    [JsonIgnore]
+    [DNJ.JsonIgnore]
     public string Message { get => _message; set { _message = value; RaisePropertyChanged("Message"); } }
     public bool Paused { get => _paused; set { _paused = value; RaisePropertyChanged("Paused"); RaisePropertyChanged("Receiving"); } }
     public bool StreamTextBoxEnabled { get => _streamTextBoxEnabled; set { _streamTextBoxEnabled = value; RaisePropertyChanged("StreamTextBoxEnabled"); } }
-    [JsonConverter(typeof(SpeckleClientConverter))]
+    [DNJ.JsonConverter(typeof(SpeckleClientConverter))]
     public SpeckleApiClient myReceiver;
     #endregion
 
 
-    [JsonConstructor]
+    [DNJ.JsonConstructor]
     private Receiver(IEnumerable<PortModel> inPorts, IEnumerable<PortModel> outPorts) : base(inPorts, outPorts)
     {
       SpeckleCore.SpeckleInitializer.Initialize();
@@ -310,7 +312,7 @@ namespace SpeckleDynamo
 
         // put them in our bucket
         newObjects.AddRange(res.Resources);
-        this.Message = JsonConvert.SerializeObject(String.Format("Got {0} out of {1} objects.", i, payload.Length));
+        this.Message = DNJ.JsonConvert.SerializeObject(String.Format("Got {0} out of {1} objects.", i, payload.Length));
       }
 
       foreach (var obj in newObjects)

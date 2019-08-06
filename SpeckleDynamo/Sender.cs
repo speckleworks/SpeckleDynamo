@@ -1,4 +1,7 @@
-﻿using System;
+﻿extern alias DynamoNewtonsoft;
+using DNJ = DynamoNewtonsoft::Newtonsoft.Json;
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -14,10 +17,10 @@ using Dynamo.Graph;
 using Dynamo.Graph.Connectors;
 using Dynamo.Graph.Nodes;
 using Dynamo.Utilities;
-using Newtonsoft.Json;
 using ProtoCore.AST.AssociativeAST;
 using SpeckleCore;
 using SpeckleDynamo.Serialization;
+
 
 namespace SpeckleDynamo
 {
@@ -54,17 +57,17 @@ namespace SpeckleDynamo
     public string Email { get => _email; set { _email = value; RaisePropertyChanged("Email"); } }
     public string Server { get => _server; set { _server = value; RaisePropertyChanged("Server"); } }
     public string StreamId { get => _streamId; set { _streamId = value; RaisePropertyChanged("StreamId"); } }
-    [JsonIgnore]
+    [DNJ.JsonIgnore]
     public bool Transmitting { get => _transmitting; set { _transmitting = value; RaisePropertyChanged("Transmitting"); } }
-    [JsonIgnore]
+    [DNJ.JsonIgnore]
     public string Message { get => _message; set { _message = value; RaisePropertyChanged("Message"); } }
 
-    [JsonConverter(typeof(SpeckleClientConverter))]
+    [DNJ.JsonConverter(typeof(SpeckleClientConverter))]
     public SpeckleApiClient mySender;
     #endregion
 
 
-    [JsonConstructor]
+    [DNJ.JsonConstructor]
     private Sender(IEnumerable<PortModel> inPorts, IEnumerable<PortModel> outPorts) : base(inPorts, outPorts)
     {
       SpeckleCore.SpeckleInitializer.Initialize();
@@ -85,6 +88,11 @@ namespace SpeckleDynamo
       InPorts.Add(new PortModel(PortType.Input, this, new PortData("A", "")));
       InPorts.Add(new PortModel(PortType.Input, this, new PortData("B", "")));
       InPorts.Add(new PortModel(PortType.Input, this, new PortData("C", "")));
+
+
+      var g = typeof(DNJ.JsonConverter).Assembly;
+      var g2 = typeof(Newtonsoft.Json.JsonConverter).Assembly;
+      var a = AppDomain.CurrentDomain.GetAssemblies().Where(x => x.FullName.Contains("Newt")).ToList();
 
       RegisterAllPorts();
       ArgumentLacing = LacingStrategy.Disabled;
@@ -388,6 +396,7 @@ namespace SpeckleDynamo
 
         Message = String.Format("Converting {0} \n objects", BucketObjects.Count);
 
+        var g2 = typeof(Newtonsoft.Json.JsonConverter).Assembly;
         var convertedObjects = Converter.Serialise(BucketObjects).ToList();
 
         Message = String.Format("Creating payloads");
