@@ -1,5 +1,5 @@
 # General Configuration
-version: 1.5.2.{build}
+version: 1.5.3.{build}
 skip_branch_with_pr: true
 
 # Environment Configuration
@@ -38,6 +38,20 @@ after_build:
 artifacts:
   path: SpeckleDynamo-%APPVEYOR_BUILD_VERSION%.zip
   name: Release
+
+deploy:
+  - release: SpeckleDynamo-$(APPVEYOR_BUILD_VERSION)
+    tag: $(APPVEYOR_REPO_TAG_NAME)
+    description: 'Speckle client for Dynamo.'
+    provider: GitHub
+    auth_token:
+      secure: D5tPFvdQMg9sIe0sSvQjEWw4KAdOk1jyxNwiH5qP5DpDmUH6n6NgTdA+56vXS1Pe # your encrypted token from GitHub
+    artifact: SpeckleDynamo-$(APPVEYOR_BUILD_VERSION).zip
+    draft: false
+    prerelease: true
+    force_update: true
+    on:              # release from master branch only
+      appveyor_repo_tag: true        # deploy on tag push only
 
 notifications:
 - provider: Slack
