@@ -79,7 +79,7 @@ namespace SpeckleDynamo
     public Sender()
     {
       Transmitting = true;
-      
+
       SpeckleCore.SpeckleInitializer.Initialize();
       SpeckleCore.LocalContext.Init();
 
@@ -129,7 +129,7 @@ namespace SpeckleDynamo
         return Enumerable.Empty<AssociativeNode>();
       }
 
-      if (mySender == null || mySender.StreamId == null || DataSender ==null)
+      if (mySender == null || mySender.StreamId == null || DataSender == null)
       {
         return Enumerable.Empty<AssociativeNode>();
       }
@@ -291,42 +291,63 @@ namespace SpeckleDynamo
           Message = "Account error";
           return;
         }
-        
+
         InitializeSender(false);
         Message = "";
         return;
       }
 
       Message = "Initialising...";
-      var myForm = new SpecklePopup.MainWindow(true,true);
-      // myForm.Owner = Application.Current.MainWindow;
-      DispatchOnUIThread(() =>
+      Transmitting = true;
+
+      //account/form flow
+      Account account = null;
+      LocalContext.Init();
+      try
       {
-        //if default account exists form is closed automatically
-        if (!myForm.HasDefaultAccount)
+        //try getting default account, exception is thrownif none is set
+        account = LocalContext.GetDefaultAccount();
+      }
+      catch (Exception ex)
+      {
+      }
+
+      //show account selection window
+      if (account == null)
+      {
+        DispatchOnUIThread(() =>
         {
-          myForm.ShowDialog();
-        }
+          //open window with isPopUp=true
+          var signInWindow = new SpecklePopup.SignInWindow(true);
+          signInWindow.ShowDialog();
 
-        if (myForm.restApi != null && myForm.apitoken != null)
-        {
-          mySender = new SpeckleApiClient(myForm.restApi);
+          if (signInWindow.AccountListBox.SelectedIndex != -1)
+          {
+            account = signInWindow.accounts[signInWindow.AccountListBox.SelectedIndex];
+          }         
+        });
+      }
 
-          Email = myForm.selectedEmail;
-          Server = myForm.selectedServer;
+      if (account != null)
+      {
+        mySender = new SpeckleApiClient(account.RestApi);
 
-          RestApi = myForm.restApi;
-          AuthToken = myForm.apitoken;
+        Email = account.Email;
+        Server = account.ServerName;
 
-          InitializeSender(true);
-        }
-        else
-        {
-          Message = "";
-          Error("Account selection failed.");
-          Transmitting = false;
-        }
-      });
+        RestApi = account.RestApi;
+        AuthToken = account.Token;
+
+        InitializeSender(true);
+      }
+      else
+      {
+        Message = "";
+        Error("Account selection failed.");
+        Transmitting = false;
+      }
+
+
     }
 
     private void InitializeSender(bool init)
@@ -549,7 +570,7 @@ namespace SpeckleDynamo
       var updateResult = mySender.StreamUpdateAsync(mySender.StreamId, updateStream).GetAwaiter().GetResult();
 
       Log += updateResult.Message;
-      mySender.BroadcastMessage( "stream", mySender.StreamId, new { eventType = "update-meta" });
+      mySender.BroadcastMessage("stream", mySender.StreamId, new { eventType = "update-meta" });
       Transmitting = false;
     }
 
