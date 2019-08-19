@@ -157,8 +157,8 @@
     <Reference Include="SpeckleCore, Version=1.5.2.343, Culture=neutral, processorArchitecture=AMD64">
       <HintPath>..\packages\SpeckleCore.1.5.2.343\lib\net45\SpeckleCore.dll</HintPath>
     </Reference>
-    <Reference Include="SpecklePopup, Version=1.6.2.34, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SpecklePopup.1.6.2.34-wip\lib\net45\SpecklePopup.dll</HintPath>
+    <Reference Include="SpecklePopup, Version=1.6.8.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SpecklePopup.1.6.8\lib\net45\SpecklePopup.dll</HintPath>
     </Reference>
     <Reference Include="SQLite-net, Version=1.5.231.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\sqlite-net-pcl.1.5.231\lib\netstandard1.1\SQLite-net.dll</HintPath>
