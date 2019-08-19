@@ -54,28 +54,47 @@ namespace SpeckleDynamoExtension
     {
       readyParams = p;
 
-      var myForm = new SpecklePopup.MainWindow(true, true);
-
-      //if default account exists form is closed automatically
-      if (!myForm.HasDefaultAccount)
-        myForm.ShowDialog();
-      if (myForm.restApi != null && myForm.apitoken != null)
+      //account/form flow
+      Account account = null;
+      LocalContext.Init();
+      try
       {
-        myReceiver = new SpeckleApiClient(myForm.restApi);
+        //try getting default account, exception is thrownif none is set
+        account = LocalContext.GetDefaultAccount();
+      }
+      catch (Exception ex)
+      {
+      }
 
-        Email = myForm.selectedEmail;
-        Server = myForm.selectedServer;
+      //show account selection window
+      if (account == null)
+      {
+          //open window with isPopUp=true
+          var signInWindow = new SpecklePopup.SignInWindow(true);
+          signInWindow.ShowDialog();
 
-        RestApi = myForm.restApi;
-        AuthToken = myForm.apitoken;
+          if (signInWindow.AccountListBox.SelectedIndex != -1)
+          {
+            account = signInWindow.accounts[signInWindow.AccountListBox.SelectedIndex];
+          }
+      }
+
+      if (account != null)
+      {
+        myReceiver = new SpeckleApiClient(account.RestApi);
+
+        Email = account.Email;
+        Server = account.ServerName;
+
+        RestApi = account.RestApi;
+        AuthToken = account.Token;
       }
       else
       {
         Message = "Account selection failed.";
+
         Transmitting = false;
       }
-
-
     }
 
     internal void StreamChanged()

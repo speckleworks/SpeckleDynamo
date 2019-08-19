@@ -58,7 +58,7 @@ namespace SpeckleDynamoExtension
       speckleAccountsMenu.Click += (sender, args) =>
       {
         //var viewModel = new SampleWindowViewModel(p);
-        var window = new SpecklePopup.MainWindow(false, false)
+        var window = new SpecklePopup.SignInWindow()
         {
           Owner = viewLoadedParams.DynamoWindow,
           WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner

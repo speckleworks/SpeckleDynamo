@@ -51,20 +51,40 @@ namespace SpeckleDynamoExtension
     {
       readyParams = p;
 
-      var myForm = new SpecklePopup.MainWindow(true, true);
-
-      //if default account exists form is closed automatically
-      if (!myForm.HasDefaultAccount)
-        myForm.ShowDialog();
-      if (myForm.restApi != null && myForm.apitoken != null)
+      //account/form flow
+      Account account = null;
+      LocalContext.Init();
+      try
       {
-        mySender = new SpeckleApiClient(myForm.restApi);
+        //try getting default account, exception is thrownif none is set
+        account = LocalContext.GetDefaultAccount();
+      }
+      catch (Exception ex)
+      {
+      }
 
-        Email = myForm.selectedEmail;
-        Server = myForm.selectedServer;
+      //show account selection window
+      if (account == null)
+      {
+        //open window with isPopUp=true
+        var signInWindow = new SpecklePopup.SignInWindow(true);
+        signInWindow.ShowDialog();
 
-        RestApi = myForm.restApi;
-        AuthToken = myForm.apitoken;
+        if (signInWindow.AccountListBox.SelectedIndex != -1)
+        {
+          account = signInWindow.accounts[signInWindow.AccountListBox.SelectedIndex];
+        }
+      }
+
+      if (account != null)
+      {
+        mySender = new SpeckleApiClient(account.RestApi);
+
+        Email = account.Email;
+        Server = account.ServerName;
+
+        RestApi = account.RestApi;
+        AuthToken = account.Token;
 
         InitializeSender();
       }
@@ -73,8 +93,6 @@ namespace SpeckleDynamoExtension
         Message = "Account selection failed.";
         Transmitting = false;
       }
-
-
     }
 
     internal void Send_Click(object sender, RoutedEventArgs e)
@@ -117,10 +135,10 @@ namespace SpeckleDynamoExtension
       //add all the connectors in use just once
       foreach (var node in sel)
       {
-        foreach( var conn in node.AllConnectors)
+        foreach (var conn in node.AllConnectors)
         {
-            if (!connectors.Any(x => x.GUID == conn.GUID) && sel.Any(x => x.GUID == conn.Start.Owner.GUID) && sel.Any(x => x.GUID == conn.End.Owner.GUID))
-              connectors.Add(conn);
+          if (!connectors.Any(x => x.GUID == conn.GUID) && sel.Any(x => x.GUID == conn.Start.Owner.GUID) && sel.Any(x => x.GUID == conn.End.Owner.GUID))
+            connectors.Add(conn);
         }
       }
 
@@ -148,7 +166,7 @@ namespace SpeckleDynamoExtension
       //there might be a way to do that with native speckleabstracts
       var json = JsonConvert.SerializeObject(workspace, settings);
       var result = ReplaceTypeDeclarations(json);
-      BucketObjects.Add(new SpeckleNodeEvent { Json = result});
+      BucketObjects.Add(new SpeckleNodeEvent { Json = result });
       UpdateData();
     }
 
@@ -156,8 +174,8 @@ namespace SpeckleDynamoExtension
 
     private void InitializeSender()
     {
-        mySender.IntializeSender(AuthToken, _documentName, "Dynamo", _documentGuid).ContinueWith(task =>
-        {
+      mySender.IntializeSender(AuthToken, _documentName, "Dynamo", _documentGuid).ContinueWith(task =>
+      {
           // ExpireNode();
         });
 
@@ -229,7 +247,7 @@ namespace SpeckleDynamoExtension
 
       if (objectUpdatePayloads.Count > 100)
       {
-        Message="This is a humongous update, in the range of ~50mb. For now, create more streams instead of just one massive one! Updates will be faster and snappier, and you can combine them back together at the other end easier.";
+        Message = "This is a humongous update, in the range of ~50mb. For now, create more streams instead of just one massive one! Updates will be faster and snappier, and you can combine them back together at the other end easier.";
       }
 
       int k = 0;
@@ -274,25 +292,25 @@ namespace SpeckleDynamoExtension
       if (mySender != null)
         mySender.Dispose();
     }
-  
 
-  internal static string ReplaceTypeDeclarations(string json, bool fromServer = false)
-  {
-    var result = json;
 
-    if (fromServer)
+    internal static string ReplaceTypeDeclarations(string json, bool fromServer = false)
     {
-      var rgx2 = new Regex(@"ConcreteType");
-      result = rgx2.Replace(result, "$type");
-    }
-    else
-    {
-      var rgx2 = new Regex(@"\$type");
-      result = rgx2.Replace(result, "ConcreteType");
-    }
+      var result = json;
 
-    return result;
-  }
+      if (fromServer)
+      {
+        var rgx2 = new Regex(@"ConcreteType");
+        result = rgx2.Replace(result, "$type");
+      }
+      else
+      {
+        var rgx2 = new Regex(@"\$type");
+        result = rgx2.Replace(result, "ConcreteType");
+      }
+
+      return result;
+    }
   }
 
   public class SpeckleNodeEvent

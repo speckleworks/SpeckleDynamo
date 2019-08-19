@@ -103,32 +103,56 @@ namespace SpeckleDynamo
         GetStreams();
         return;
       }
-      var myForm = new SpecklePopup.MainWindow(true, true);
-      //TODO: fix this it's crashing revit
-      //myForm.Owner = Application.Current.MainWindow;
-      this.DispatchOnUIThread(() =>
+
+      Transmitting = true;
+
+      //account/form flow
+      Account account = null;
+      LocalContext.Init();
+      try
       {
-        //if default account exists form is closed automatically
-        if (!myForm.HasDefaultAccount)
-          myForm.ShowDialog();
-        if (myForm.restApi != null && myForm.apitoken != null)
+        //try getting default account, exception is thrownif none is set
+        account = LocalContext.GetDefaultAccount();
+      }
+      catch (Exception ex)
+      {
+      }
+
+      //show account selection window
+      if (account == null)
+      {
+        DispatchOnUIThread(() =>
         {
-          Email = myForm.selectedEmail;
-          Server = myForm.selectedServer;
+          //open window with isPopUp=true
+          var signInWindow = new SpecklePopup.SignInWindow(true);
+          signInWindow.ShowDialog();
 
-          RestApi = myForm.restApi;
-          AuthToken = myForm.apitoken;
+          if (signInWindow.AccountListBox.SelectedIndex != -1)
+          {
+            account = signInWindow.accounts[signInWindow.AccountListBox.SelectedIndex];
+          }
+        });
+      }
 
-          Client = new SpeckleApiClient();  
+      if (account != null)
+      {
+        Email = account.Email;
+        Server = account.ServerName;
 
-          GetStreams();
+        RestApi = account.RestApi;
+        AuthToken = account.Token;
 
-        }
-        else
-        {
-          Error("Account selection failed.");
-        }
-      });
+        Client = new SpeckleApiClient();
+
+        GetStreams();
+      }
+      else
+      {
+        Error("Account selection failed.");
+        Transmitting = false;
+      }
+
+
     }
 
     private void GetStreams()
