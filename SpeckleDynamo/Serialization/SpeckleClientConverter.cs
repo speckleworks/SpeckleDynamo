@@ -42,7 +42,7 @@ namespace SpeckleDynamo.Serialization
 
             BinaryFormatter bformatter = new BinaryFormatter();
             client = (SpeckleApiClient)bformatter.Deserialize(output);
-
+            client.ClientType = "Dynamo";
           }
         }
       }
