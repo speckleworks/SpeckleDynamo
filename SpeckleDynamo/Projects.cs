@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+
 namespace SpeckleDynamo
 {
   //based on Matteo Cominetti's Streams node
@@ -173,7 +174,10 @@ namespace SpeckleDynamo
       if (DateTime.Now.Subtract(Globals.LastCheckedProjects).Seconds < 10)
       {
         UserProjects.Clear();
-        UserProjects.AddRange(Globals.UserProjects);
+        if (Globals.UserProjects.Count > 0)
+        {
+          UserProjects.AddRange(Globals.UserProjects);
+        }
         Transmitting = false;
         return;
       }
