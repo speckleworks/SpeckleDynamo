@@ -1,4 +1,5 @@
-﻿extern alias DynamoNewtonsoft;
+﻿
+extern alias DynamoNewtonsoft;
 using DNJ = DynamoNewtonsoft::Newtonsoft.Json;
 
 using Dynamo.Graph.Nodes;
@@ -10,71 +11,82 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Xml;
 
 namespace SpeckleDynamo
 {
-  [NodeName("Speckle Streams")]
-  [NodeDescription("Lists your existing Speckle streams for a specified account.")]
-  [NodeCategory("Speckle.I/O")]
+  //based on Matteo Cominetti's Streams node
 
-  //Output
+  //Node properties
+  [NodeName("Speckle Projects")]
+  [NodeDescription("Lists projects owned or accessed by an account.")]
+  [NodeCategory("Speckle.Projects")]
+
+  //Node outputs
   [OutPortNames("ID")]
   [OutPortTypes("string")]
-  [OutPortDescriptions("Stream ID")]
+  [OutPortDescriptions("Project ID")]
 
   [IsDesignScriptCompatible]
-  public class Streams : NodeModel, INotifyPropertyChanged
+
+  public class Projects : NodeModel, INotifyPropertyChanged
   {
-    private string _authToken;
-    private string _restApi;
-    private string _email;
-    private string _server;
-    private string _streamId;
-    private bool _transmitting = true;
-    private ObservableCollection<SpeckleStream> _userStreams = new ObservableCollection<SpeckleStream>();
+    private string authToken;
+    private string restApi;
+    private string email;
+    private string server;
+    private string projectId;
+    private bool transmitting = true;
+    private ObservableCollection<Project> userProjects = new ObservableCollection<Project>();
 
-    internal string AuthToken { get => _authToken; set { _authToken = value; NotifyPropertyChanged("AuthToken"); } }
-    #region public properties
-    public string RestApi { get => _restApi; set { _restApi = value; NotifyPropertyChanged("RestApi"); } }
-    public string Email { get => _email; set { _email = value; NotifyPropertyChanged("Email"); } }
-    public string Server { get => _server; set { _server = value; NotifyPropertyChanged("Server"); } }
+    internal string AuthToken { get => authToken; set { authToken = value; NotifyPropertyChanged("AuthToken"); } }
 
-    public string StreamId
+    public string RestApi { get => restApi; set { restApi = value; NotifyPropertyChanged("RestApi"); } }
+    public string Email { get => email; set { email = value; NotifyPropertyChanged("Email"); } }
+    public string Server { get => server; set { server = value; NotifyPropertyChanged("Server"); } }
+
+    public string ProjectId
     {
-      get => _streamId; set
+      get => projectId;
+      set
       {
-        _streamId = value;
-        NotifyPropertyChanged("StreamId");
+        projectId = value;
+        NotifyPropertyChanged("ProjectId");
         ExpireNode();
-
       }
     }
-    public bool Transmitting { get => _transmitting; set { _transmitting = value; NotifyPropertyChanged("Transmitting"); } }
 
+    public bool Transmitting
+    {
+      get => transmitting;
+      set
+      {
+        transmitting = value;
+        NotifyPropertyChanged("Transmitting");
+      }
+    }
 
     [DNJ.JsonIgnore]
-    public ObservableCollection<SpeckleStream> UserStreams { get => _userStreams; set { _userStreams = value; NotifyPropertyChanged("UserStreams"); } }
-    [DNJ.JsonIgnore]
-    List<SpeckleStream> SharedStreams = new List<SpeckleStream>();
+    public ObservableCollection<Project> UserProjects
+    {
+      get => userProjects;
+      set
+      {
+        userProjects = value;
+        NotifyPropertyChanged("UserProjects");
+      }
+    }
+
     [DNJ.JsonIgnore]
     [DNJ.JsonConverter(typeof(SpeckleClientConverter))]
     SpeckleApiClient Client;
 
-
-    #endregion
-
-
     [DNJ.JsonConstructor]
-    private Streams(IEnumerable<PortModel> inPorts, IEnumerable<PortModel> outPorts) : base(inPorts, outPorts)
+    private Projects(IEnumerable<PortModel> inPorts, IEnumerable<PortModel> outPorts) : base(inPorts, outPorts)
     {
     }
 
-    public Streams()
+    public Projects()
     {
       RegisterAllPorts();
     }
@@ -83,10 +95,10 @@ namespace SpeckleDynamo
     public override IEnumerable<AssociativeNode> BuildOutputAst(List<AssociativeNode> inputAstNodes)
     {
       this.ClearErrorsAndWarnings();
-      if (string.IsNullOrEmpty(StreamId))
+      if (string.IsNullOrEmpty(ProjectId))
         return Enumerable.Empty<AssociativeNode>();
 
-      return new AssociativeNode[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildStringNode(StreamId)) };
+      return new AssociativeNode[] { AstFactory.BuildAssignment(GetAstIdentifierForOutputIndex(0), AstFactory.BuildStringNode(ProjectId)) };
     }
 
     public void ExpireNode()
@@ -100,7 +112,7 @@ namespace SpeckleDynamo
       if (Client != null)
       {
         AuthToken = Client.AuthToken;
-        GetStreams();
+        GetProjects();
         return;
       }
 
@@ -116,6 +128,7 @@ namespace SpeckleDynamo
       }
       catch (Exception ex)
       {
+        System.Diagnostics.Debug.WriteLine(ex.ToString());
       }
 
       //show account selection window
@@ -144,7 +157,7 @@ namespace SpeckleDynamo
 
         Client = new SpeckleApiClient();
 
-        GetStreams();
+        GetProjects();
       }
       else
       {
@@ -155,15 +168,15 @@ namespace SpeckleDynamo
 
     }
 
-    private void GetStreams()
+    private void GetProjects()
     {
-      //caching streams
-      if(DateTime.Now.Subtract(Globals.LastCheckedStreams).Seconds < 10)
+      //caching projects
+      if (DateTime.Now.Subtract(Globals.LastCheckedProjects).Seconds < 10)
       {
-        UserStreams.Clear();
-        if (Globals.UserStreams.Count > 0)
+        UserProjects.Clear();
+        if (Globals.UserProjects.Count > 0)
         {
-          UserStreams.AddRange(Globals.UserStreams);
+          UserProjects.AddRange(Globals.UserProjects);
         }
         Transmitting = false;
         return;
@@ -171,15 +184,15 @@ namespace SpeckleDynamo
 
       Client.BaseUrl = RestApi;
       Client.AuthToken = AuthToken;
-      Client.StreamsGetAllAsync("fields=streamId,name").ContinueWith(tsk =>
+      Client.ProjectGetAllAsync().ContinueWith(tsk =>
       {
         DispatchOnUIThread(() =>
         {
-          UserStreams.Clear();
-          UserStreams.AddRange(tsk.Result.Resources.ToList());
+          UserProjects.Clear();
+          UserProjects.AddRange(tsk.Result.Resources.ToList());
           Transmitting = false;
-          Globals.LastCheckedStreams = DateTime.Now;
-          Globals.UserStreams = UserStreams;
+          Globals.LastCheckedProjects = DateTime.Now;
+          Globals.UserProjects = UserProjects;
         });
       });
     }
@@ -202,6 +215,7 @@ namespace SpeckleDynamo
         PropertyChanged(this, new PropertyChangedEventArgs(info));
       }
     }
-
   }
+
+
 }

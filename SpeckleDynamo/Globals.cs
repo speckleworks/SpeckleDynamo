@@ -12,5 +12,7 @@ namespace SpeckleDynamo
   {
     public static ObservableCollection<SpeckleStream> UserStreams { get; set; }
     public static DateTime LastCheckedStreams { get; set; }
+    public static ObservableCollection<Project> UserProjects { get; set; }
+    public static DateTime LastCheckedProjects { get; set; }
   }
 }
