@@ -20,7 +20,7 @@ namespace SpeckleDynamo
   //Node properties
   [NodeName("Speckle Projects")]
   [NodeDescription("Lists projects owned or accessed by an account.")]
-  [NodeCategory("Speckle.I/O")]
+  [NodeCategory("Speckle.Projects")]
 
   //Node outputs
   [OutPortNames("ID")]
