@@ -161,7 +161,10 @@ namespace SpeckleDynamo
       if(DateTime.Now.Subtract(Globals.LastCheckedStreams).Seconds < 10)
       {
         UserStreams.Clear();
-        UserStreams.AddRange(Globals.UserStreams);
+        if (Globals.UserStreams.Count > 0)
+        {
+          UserStreams.AddRange(Globals.UserStreams);
+        }
         Transmitting = false;
         return;
       }
