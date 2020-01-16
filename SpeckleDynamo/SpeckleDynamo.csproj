@@ -172,8 +172,8 @@
       <HintPath>..\packages\DynamoVisualProgramming.ZeroTouchLibrary.2.0.2.6986\lib\net45\ProtoGeometry.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="SpeckleCore, Version=1.6.9.0, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\packages\SpeckleCore.1.6.9\lib\net45\SpeckleCore.dll</HintPath>
+    <Reference Include="SpeckleCore, Version=1.6.17.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\SpeckleCore.1.6.17-wip\lib\net45\SpeckleCore.dll</HintPath>
     </Reference>
     <Reference Include="SpecklePopup, Version=1.6.13.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\SpecklePopup.1.6.13\lib\net45\SpecklePopup.dll</HintPath>
