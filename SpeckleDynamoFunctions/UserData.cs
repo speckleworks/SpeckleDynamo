@@ -33,6 +33,15 @@ namespace SpeckleDynamo.Data
         throw new ArgumentException(String.Format(typeException, geometry.GetType()), "geometry");
       }
       if (dictionary == null) { throw new ArgumentNullException("dictionary"); }
+
+      //non serializable values would fail hashing and further serialization
+      foreach(var key in dictionary.Keys)
+      {
+        if (!dictionary.ValueAtKey(key).IsSerializable())
+        {
+          dictionary = dictionary.SetValueAtKeys(new List<string> { key }, new List<object> { null });
+        }
+      }
       
       if(dictionary.Count > 0)
       {
@@ -54,6 +63,15 @@ namespace SpeckleDynamo.Data
       {
         return geometry;
       }
+    }
+
+    private static bool IsSerializable(this object obj)
+    {
+      if (obj == null)
+        return false;
+
+      Type t = obj.GetType();
+      return t.IsSerializable;
     }
 
     /// <summary>
