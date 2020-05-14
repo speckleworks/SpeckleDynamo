@@ -202,7 +202,8 @@ namespace SpeckleDynamo
               }
               else
               {
-                output = tree[0];
+                var branchIndex = Convert.ToInt32(treeTopo.First().Split('-')[0].Split(';')[0]);
+                output = tree[branchIndex];
               }
             }
 
